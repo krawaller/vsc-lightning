@@ -65,11 +65,6 @@ class LightningDataProvider
 
       this.configuration = config;
 
-      // Update the tree view title
-      if (this.treeView) {
-        this.treeView.title = config.title;
-      }
-
       this.refresh();
     } catch (error) {
       console.error("Error loading configuration file:", error);
@@ -113,7 +108,24 @@ class LightningDataProvider
       return [];
     }
 
-    return this.getChildItems(this.configuration.items);
+    const items: LightningTreeItem[] = [];
+
+    // Add the title as the first item (non-clickable, just for display)
+    const titleItem = new LightningTreeItem(
+      this.configuration.title,
+      undefined, // No command - just a display item
+      undefined // No lightning item - this is just a title
+    );
+    // Style the title item distinctively
+    titleItem.iconPath = new vscode.ThemeIcon("symbol-event");
+    titleItem.tooltip = `Lightning Configuration: ${this.configuration.title}`;
+    titleItem.contextValue = "titleItem";
+    items.push(titleItem);
+
+    // Add the actual configuration items
+    items.push(...this.getChildItems(this.configuration.items));
+
+    return items;
   }
 
   private getChildItems(items: LightningItem[]): LightningTreeItem[] {
