@@ -71,6 +71,10 @@
       {
         "command": "lightning.playSound",
         "title": "Play Sound"
+      },
+      {
+        "command": "lightning.toggleMute",
+        "title": "Toggle Sound Mute"
       }
     ],
     "menus": {
@@ -78,7 +82,12 @@
         {
           "command": "lightning.resetConfig",
           "when": "view == lightningView",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "lightning.toggleMute",
+          "when": "view == lightningView",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [

@@ -5,6 +5,17 @@ import * as fs from "fs";
 import * as path from "path";
 import { LightningConfiguration, LightningItem } from "./lightning-types";
 
+// Global state for sound muting
+let isSoundMuted = false;
+
+function setSoundMuted(muted: boolean) {
+  isSoundMuted = muted;
+}
+
+function getSoundMuted(): boolean {
+  return isSoundMuted;
+}
+
 class LightningTreeItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
@@ -540,6 +551,11 @@ async function playSoundIfPresent(item: any) {
 
 // Function to play sound files
 async function playSound(soundPath: string) {
+  // Check if sounds are muted
+  if (getSoundMuted()) {
+    return; // Exit early if muted
+  }
+  
   try {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) {
@@ -628,6 +644,17 @@ export function activate(context: vscode.ExtensionContext) {
     () => {
       // Reset to initial state
       treeDataProvider.resetToInitialState();
+    }
+  );
+
+  // Register the command to toggle sound mute
+  const toggleMuteCommand = vscode.commands.registerCommand(
+    "lightning.toggleMute",
+    () => {
+      const currentMuted = getSoundMuted();
+      setSoundMuted(!currentMuted);
+      const status = !currentMuted ? "muted" : "unmuted";
+      vscode.window.showInformationMessage(`Lightning sounds ${status}`);
     }
   );
 
@@ -1033,6 +1060,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     resetConfigCommand,
+    toggleMuteCommand,
     openJsonFileCommand,
     openFileCommand,
     showDialogCommand,
