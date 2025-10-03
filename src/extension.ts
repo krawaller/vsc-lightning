@@ -594,13 +594,16 @@ export function activate(context: vscode.ExtensionContext) {
   // Allow the data provider to update the tree view title
   treeDataProvider.setTreeView(treeView);
 
-  // Handle tree view selection to play sounds for folders
-  treeView.onDidChangeSelection((e) => {
-    if (e.selection.length > 0) {
-      const selectedItem = e.selection[0];
-      if (selectedItem.lightningItem) {
-        playSoundIfPresent(selectedItem.lightningItem);
-      }
+  // Handle tree view expand/collapse to play sounds for folders
+  treeView.onDidExpandElement((e) => {
+    if (e.element.lightningItem && e.element.lightningItem.type === "folder") {
+      playSoundIfPresent(e.element.lightningItem);
+    }
+  });
+
+  treeView.onDidCollapseElement((e) => {
+    if (e.element.lightningItem && e.element.lightningItem.type === "folder") {
+      playSoundIfPresent(e.element.lightningItem);
     }
   });
 
@@ -833,10 +836,10 @@ export function activate(context: vscode.ExtensionContext) {
     async (item: any) => {
       // Play sound if present
       await playSoundIfPresent(item);
-      
+
       const diffPath = item.diffPath;
       const action = item.action;
-      
+
       try {
         let resolvedPath = diffPath;
 
