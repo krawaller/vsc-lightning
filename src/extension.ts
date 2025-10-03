@@ -213,7 +213,58 @@ class LightningDataProvider
   }
 }
 
-// Function to show quiz in a simple dialog
+// Function to show quiz in actual modal dialogs
+async function showQuizInModalDialog(quizItem: any) {
+  // Combine and randomize answers
+  const allAnswers = [
+    ...quizItem.correctAnswers.map((answer: string) => ({
+      text: answer,
+      correct: true,
+    })),
+    ...quizItem.wrongAnswers.map((answer: string) => ({
+      text: answer,
+      correct: false,
+    })),
+  ];
+
+  // Shuffle the answers
+  for (let i = allAnswers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allAnswers[i], allAnswers[j]] = [allAnswers[j], allAnswers[i]];
+  }
+
+  // Use a simple approach with showInformationMessage and hope for the best alignment
+  const questionAndAnswers =
+    `${quizItem.question}\n\n` +
+    allAnswers
+      .map((answer, index) => `${index + 1}. ${answer.text}`)
+      .join("\n");
+
+  // Show initial dialog
+  const action = await vscode.window.showInformationMessage(
+    questionAndAnswers,
+    { modal: true },
+    "Reveal Answers"
+  );
+
+  if (action === "Reveal Answers") {
+    // Show revealed answers
+    const revealedContent =
+      `${quizItem.question}\n\n` +
+      allAnswers
+        .map((answer, index) => {
+          const icon = answer.correct ? "✅" : "❌";
+          return `${icon} ${index + 1}. ${answer.text}`;
+        })
+        .join("\n");
+
+    await vscode.window.showInformationMessage(revealedContent, {
+      modal: true,
+    });
+  }
+}
+
+// Function to show quiz in menu format (QuickPick)
 async function showQuizInDialog(quizItem: any) {
   // Combine and randomize answers
   const allAnswers = [
@@ -489,9 +540,11 @@ export function activate(context: vscode.ExtensionContext) {
         const displayMode = quizItem.displayMode || "webview";
 
         if (displayMode === "menu") {
-          await showQuizInDialog(quizItem);
+          await showQuizInDialog(quizItem); // This is the QuickPick function
+        } else if (displayMode === "dialog") {
+          await showQuizInModalDialog(quizItem); // This is the InputBox function
         } else {
-          await showQuizDialog(quizItem);
+          await showQuizDialog(quizItem); // This is the webview function
         }
       }
     }

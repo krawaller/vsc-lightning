@@ -209,6 +209,25 @@
       "icon": "question",
       "iconColor": "charts.green",
       "labelColor": "charts.green"
+    },
+    {
+      "type": "quiz",
+      "label": "JavaScript Quiz (Dialog)",
+      "question": "Which of the following are true about JavaScript?",
+      "correctAnswers": [
+        "It is dynamically typed",
+        "It supports closures",
+        "It runs in browsers and Node.js"
+      ],
+      "wrongAnswers": [
+        "It is compiled to machine code",
+        "It requires manual memory management",
+        "It only runs on servers"
+      ],
+      "displayMode": "dialog",
+      "icon": "question",
+      "iconColor": "charts.orange",
+      "labelColor": "charts.orange"
     }
   ]
 }
