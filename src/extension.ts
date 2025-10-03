@@ -42,8 +42,6 @@ class LightningTreeItem extends vscode.TreeItem {
           iconName = "git-pull-request";
         } else if (lightningItem.type === "quiz") {
           iconName = "question";
-        } else if (lightningItem.type === "sound") {
-          iconName = "unmute";
         } else {
           iconName = "circle-outline"; // fallback icon
         }
@@ -77,8 +75,6 @@ class LightningTreeItem extends vscode.TreeItem {
         this.contextValue = "lightning-diff";
       } else if (lightningItem.type === "quiz") {
         this.contextValue = "lightning-quiz";
-      } else if (lightningItem.type === "sound") {
-        this.contextValue = "lightning-sound";
       }
     }
   }
@@ -185,35 +181,38 @@ class LightningDataProvider
     return items.map((item) => {
       let command: vscode.Command | undefined;
 
-      if (item.type === "file") {
+      if (item.type === "title") {
+        // Title items get a generic sound command if they have soundPath
+        if (item.soundPath) {
+          command = {
+            command: "lightning.playSound",
+            title: "Play Sound",
+            arguments: [item],
+          };
+        }
+      } else if (item.type === "file") {
         command = {
           command: "lightning.openFile",
           title: "Open File",
-          arguments: [item.path, item.line],
+          arguments: [item],
         };
       } else if (item.type === "dialog") {
         command = {
           command: "lightning.showDialog",
           title: "Show Dialog",
-          arguments: [item.message, item.severity || "info"],
+          arguments: [item],
         };
       } else if (item.type === "diff") {
         command = {
           command: "lightning.applyDiff",
           title: "Apply Diff",
-          arguments: [item.diffPath, item.action],
+          arguments: [item], // Pass full item instead of individual properties
         };
       } else if (item.type === "quiz") {
         command = {
           command: "lightning.showQuiz",
           title: "Show Quiz",
           arguments: [item],
-        };
-      } else if (item.type === "sound") {
-        command = {
-          command: "lightning.playSound",
-          title: "Play Sound",
-          arguments: [item.soundPath],
         };
       }
       // Note: folder items don't need commands as they're handled by expansion
@@ -514,6 +513,13 @@ function getQuizWebviewContent(question: string, answers: any[]): string {
 </html>`;
 }
 
+// Helper function to play sound if soundPath exists on an item
+async function playSoundIfPresent(item: any) {
+  if (item && item.soundPath) {
+    await playSound(item.soundPath);
+  }
+}
+
 // Function to play sound files
 async function playSound(soundPath: string) {
   try {
@@ -534,11 +540,11 @@ async function playSound(soundPath: string) {
 
     // Use child_process to play the sound file
     const { exec } = require("child_process");
-    
+
     // Determine the command based on the operating system
     let command: string;
     const platform = process.platform;
-    
+
     if (platform === "darwin") {
       // macOS
       command = `afplay "${resolvedPath}"`;
@@ -563,7 +569,9 @@ async function playSound(soundPath: string) {
     });
   } catch (error) {
     vscode.window.showErrorMessage(
-      `Error playing sound: ${error instanceof Error ? error.message : String(error)}`
+      `Error playing sound: ${
+        error instanceof Error ? error.message : String(error)
+      }`
     );
   }
 }
@@ -586,6 +594,16 @@ export function activate(context: vscode.ExtensionContext) {
   // Allow the data provider to update the tree view title
   treeDataProvider.setTreeView(treeView);
 
+  // Handle tree view selection to play sounds for folders
+  treeView.onDidChangeSelection((e) => {
+    if (e.selection.length > 0) {
+      const selectedItem = e.selection[0];
+      if (selectedItem.lightningItem) {
+        playSoundIfPresent(selectedItem.lightningItem);
+      }
+    }
+  });
+
   // Register the command to reset config
   const resetConfigCommand = vscode.commands.registerCommand(
     "lightning.resetConfig",
@@ -600,6 +618,9 @@ export function activate(context: vscode.ExtensionContext) {
     "lightning.showQuiz",
     async (quizItem: any) => {
       if (quizItem && quizItem.type === "quiz") {
+        // Play sound if present
+        await playSoundIfPresent(quizItem);
+
         // Check display mode - default to webview if not specified
         const displayMode = quizItem.displayMode || "webview";
 
@@ -617,10 +638,12 @@ export function activate(context: vscode.ExtensionContext) {
   // Register the command to play sound
   const playSoundCommand = vscode.commands.registerCommand(
     "lightning.playSound",
-    async (soundPath: string) => {
-      await playSound(soundPath);
+    async (item: any) => {
+      await playSoundIfPresent(item);
     }
-  ); // Register the command to open JSON file
+  );
+
+  // Register the command to open JSON file
   const openJsonFileCommand = vscode.commands.registerCommand(
     "lightning.openJsonFile",
     async () => {
@@ -647,15 +670,18 @@ export function activate(context: vscode.ExtensionContext) {
   // Register the command to open files
   const openFileCommand = vscode.commands.registerCommand(
     "lightning.openFile",
-    async (filePath: string, lineNumber?: number) => {
+    async (item: any) => {
+      // Play sound if present
+      await playSoundIfPresent(item);
+
       try {
-        let resolvedPath = filePath;
+        let resolvedPath = item.path;
 
         // If the path is relative, resolve it against the workspace root
-        if (!path.isAbsolute(filePath)) {
+        if (!path.isAbsolute(item.path)) {
           const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
           if (workspaceFolder) {
-            resolvedPath = path.resolve(workspaceFolder.uri.fsPath, filePath);
+            resolvedPath = path.resolve(workspaceFolder.uri.fsPath, item.path);
           } else {
             vscode.window.showErrorMessage(
               "No workspace folder found to resolve relative path"
@@ -700,15 +726,15 @@ export function activate(context: vscode.ExtensionContext) {
           const document = await vscode.window.showTextDocument(uri);
 
           // If a line number is specified, scroll to that line
-          if (lineNumber !== undefined && lineNumber > 0) {
-            const position = new vscode.Position(lineNumber - 1, 0); // VS Code uses 0-based line numbers
+          if (item.line !== undefined && item.line > 0) {
+            const position = new vscode.Position(item.line - 1, 0); // VS Code uses 0-based line numbers
             const range = new vscode.Range(position, position);
             document.selection = new vscode.Selection(position, position);
             document.revealRange(range, vscode.TextEditorRevealType.InCenter);
           }
         }
       } catch (error) {
-        vscode.window.showErrorMessage(`Failed to open file: ${filePath}`);
+        vscode.window.showErrorMessage(`Failed to open file: ${item.path}`);
       }
     }
   );
@@ -716,17 +742,21 @@ export function activate(context: vscode.ExtensionContext) {
   // Register the command to show dialog
   const showDialogCommand = vscode.commands.registerCommand(
     "lightning.showDialog",
-    (message: string, severity: "info" | "warning" | "error") => {
+    async (item: any) => {
+      // Play sound if present
+      await playSoundIfPresent(item);
+
+      const severity = item.severity || "info";
       switch (severity) {
         case "error":
-          vscode.window.showErrorMessage(message);
+          vscode.window.showErrorMessage(item.message);
           break;
         case "warning":
-          vscode.window.showWarningMessage(message);
+          vscode.window.showWarningMessage(item.message);
           break;
         case "info":
         default:
-          vscode.window.showInformationMessage(message);
+          vscode.window.showInformationMessage(item.message);
           break;
       }
     }
@@ -800,7 +830,13 @@ export function activate(context: vscode.ExtensionContext) {
   // Register the command to apply diff files
   const applyDiffCommand = vscode.commands.registerCommand(
     "lightning.applyDiff",
-    async (diffPath: string, action?: "apply" | "preview") => {
+    async (item: any) => {
+      // Play sound if present
+      await playSoundIfPresent(item);
+      
+      const diffPath = item.diffPath;
+      const action = item.action;
+      
       try {
         let resolvedPath = diffPath;
 

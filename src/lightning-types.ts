@@ -3,6 +3,7 @@ export type LightningTreeItemBase = {
   icon?: string;
   iconColor?: string;
   labelColor?: string;
+  soundPath?: string;
 };
 
 export type LightningTitle = LightningTreeItemBase & {
@@ -40,19 +41,13 @@ export type LightningQuiz = LightningTreeItemBase & {
   displayMode?: "webview" | "menu" | "dialog";
 };
 
-export type LightningSound = LightningTreeItemBase & {
-  type: "sound";
-  soundPath: string;
-};
-
 export type LightningItem =
   | LightningTitle
   | LightningFileLink
   | LightningDialogMessage
   | LightningFolder
   | LightningDiff
-  | LightningQuiz
-  | LightningSound;
+  | LightningQuiz;
 
 export type LightningConfiguration = {
   title: string;

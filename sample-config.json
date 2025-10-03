@@ -6,7 +6,8 @@
       "label": "🌟 Lightning Dashboard - Complete Sample",
       "icon": "star",
       "iconColor": "charts.yellow",
-      "labelColor": "charts.yellow"
+      "labelColor": "charts.yellow",
+      "soundPath": "welcome.wav"
     },
     {
       "type": "file",
@@ -14,7 +15,8 @@
       "path": "README.md",
       "icon": "book",
       "iconColor": "charts.blue",
-      "labelColor": "charts.blue"
+      "labelColor": "charts.blue",
+      "soundPath": "click.wav"
     },
     {
       "type": "folder",
@@ -22,6 +24,7 @@
       "icon": "folder-opened",
       "iconColor": "charts.yellow",
       "labelColor": "charts.yellow",
+      "soundPath": "folder.wav",
       "items": [
         {
           "type": "file",
@@ -153,7 +156,8 @@
       "diffPath": "sample.patch",
       "icon": "git-pull-request",
       "iconColor": "charts.purple",
-      "labelColor": "charts.purple"
+      "labelColor": "charts.purple",
+      "soundPath": "apply.wav"
     },
     {
       "type": "diff",
@@ -227,15 +231,8 @@
       "displayMode": "dialog",
       "icon": "question",
       "iconColor": "charts.orange",
-      "labelColor": "charts.orange"
-    },
-    {
-      "type": "sound",
-      "label": "Play Notification Sound",
-      "soundPath": "notification.wav",
-      "icon": "unmute",
-      "iconColor": "charts.purple",
-      "labelColor": "charts.purple"
+      "labelColor": "charts.orange",
+      "soundPath": "quiz.wav"
     }
   ]
 }
