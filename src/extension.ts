@@ -38,6 +38,8 @@ class LightningTreeItem extends vscode.TreeItem {
           iconName = "comment-discussion";
         } else if (lightningItem.type === "folder") {
           iconName = "folder";
+        } else if (lightningItem.type === "diff") {
+          iconName = "git-pull-request";
         } else {
           iconName = "circle-outline"; // fallback icon
         }
@@ -67,6 +69,8 @@ class LightningTreeItem extends vscode.TreeItem {
         this.contextValue = "dialogItem";
       } else if (lightningItem.type === "folder") {
         this.contextValue = "folderItem";
+      } else if (lightningItem.type === "diff") {
+        this.contextValue = "diffItem";
       }
     }
   }
@@ -179,6 +183,12 @@ class LightningDataProvider
           command: "lightning.showDialog",
           title: "Show Dialog",
           arguments: [item.message, item.severity || "info"],
+        };
+      } else if (item.type === "diff") {
+        command = {
+          command: "lightning.applyDiff",
+          title: "Apply Diff",
+          arguments: [item.diffPath, item.action],
         };
       }
       // Note: folder items don't need commands as they're handled by expansion
@@ -383,11 +393,111 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // Register the command to apply diff files
+  const applyDiffCommand = vscode.commands.registerCommand(
+    "lightning.applyDiff",
+    async (diffPath: string, action?: "apply" | "preview") => {
+      try {
+        let resolvedPath = diffPath;
+
+        // If the path is relative, resolve it against the workspace root
+        if (!path.isAbsolute(diffPath)) {
+          const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+          if (workspaceFolder) {
+            resolvedPath = path.resolve(workspaceFolder.uri.fsPath, diffPath);
+          } else {
+            vscode.window.showErrorMessage(
+              "No workspace folder found to resolve relative path"
+            );
+            return;
+          }
+        }
+
+        // Check if the diff file exists
+        try {
+          await fs.promises.access(resolvedPath);
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Diff file not found: ${path.basename(diffPath)}`
+          );
+          return;
+        }
+
+        // Get the workspace root for git commands
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+          vscode.window.showErrorMessage(
+            "No workspace folder found for git operations"
+          );
+          return;
+        }
+
+        // Determine action - use provided action or show confirmation dialog
+        let selectedAction = action;
+
+        if (!selectedAction) {
+          // Show confirmation dialog only if no action is specified
+          const dialogResult = await vscode.window.showWarningMessage(
+            `Apply diff from "${path.basename(
+              diffPath
+            )}"? This will modify your working directory.`,
+            { modal: true },
+            "Apply Diff",
+            "Preview Only"
+          );
+
+          // Map dialog result to action
+          if (dialogResult === "Apply Diff") {
+            selectedAction = "apply";
+          } else if (dialogResult === "Preview Only") {
+            selectedAction = "preview";
+          } else {
+            // User cancelled
+            return;
+          }
+        }
+
+        if (selectedAction === "apply") {
+          // Execute git apply command
+          const { exec } = require("child_process");
+          const workingDir = workspaceFolder.uri.fsPath;
+
+          exec(
+            `git apply "${resolvedPath}"`,
+            { cwd: workingDir },
+            (error: any, stdout: string, stderr: string) => {
+              if (error) {
+                vscode.window.showErrorMessage(
+                  `Failed to apply diff: ${error.message}\n${stderr}`
+                );
+              } else {
+                vscode.window.showInformationMessage(
+                  `Successfully applied diff: ${path.basename(diffPath)}`
+                );
+                // Refresh file explorer to show changes
+                vscode.commands.executeCommand(
+                  "workbench.files.action.refreshFilesExplorer"
+                );
+              }
+            }
+          );
+        } else if (selectedAction === "preview") {
+          // Open the diff file for preview
+          const uri = vscode.Uri.file(resolvedPath);
+          await vscode.window.showTextDocument(uri);
+        }
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to process diff: ${diffPath}`);
+      }
+    }
+  );
+
   context.subscriptions.push(
     openJsonFileCommand,
     openFileCommand,
     showDialogCommand,
-    closeFileCommand
+    closeFileCommand,
+    applyDiffCommand
   );
 }
 

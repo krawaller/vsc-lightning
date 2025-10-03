@@ -9,6 +9,12 @@ export type LightningTitle = LightningTreeItemBase & {
   type: "title";
 };
 
+export type LightningDiff = LightningTreeItemBase & {
+  type: "diff";
+  diffPath: string;
+  action?: "apply" | "preview";
+};
+
 export type LightningFileLink = LightningTreeItemBase & {
   type: "file";
   path: string;
@@ -30,7 +36,8 @@ export type LightningItem =
   | LightningTitle
   | LightningFileLink
   | LightningDialogMessage
-  | LightningFolder;
+  | LightningFolder
+  | LightningDiff;
 
 export type LightningConfiguration = {
   title: string;

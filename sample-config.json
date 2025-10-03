@@ -146,6 +146,32 @@
       "icon": "image",
       "iconColor": "charts.red",
       "labelColor": "charts.red"
+    },
+    {
+      "type": "diff",
+      "label": "Apply Sample Patch",
+      "diffPath": "sample.patch",
+      "icon": "git-pull-request",
+      "iconColor": "charts.purple",
+      "labelColor": "charts.purple"
+    },
+    {
+      "type": "diff",
+      "label": "Preview Another Patch",
+      "diffPath": "preview.patch",
+      "action": "preview",
+      "icon": "eye",
+      "iconColor": "charts.blue",
+      "labelColor": "charts.blue"
+    },
+    {
+      "type": "diff",
+      "label": "Auto-Apply Hotfix",
+      "diffPath": "hotfix.patch",
+      "action": "apply",
+      "icon": "rocket",
+      "iconColor": "charts.orange",
+      "labelColor": "charts.orange"
     }
   ]
 }
