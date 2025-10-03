@@ -40,13 +40,23 @@ class LightningTreeItem extends vscode.TreeItem {
           iconName = "circle-outline"; // fallback icon
         }
       }
-      
+
       // Create icon with optional color
       if (lightningItem.iconColor) {
-        this.iconPath = new vscode.ThemeIcon(iconName, new vscode.ThemeColor(lightningItem.iconColor));
+        this.iconPath = new vscode.ThemeIcon(
+          iconName,
+          new vscode.ThemeColor(lightningItem.iconColor)
+        );
       } else {
         this.iconPath = new vscode.ThemeIcon(iconName);
-      }      // Set context values for different item types
+      }
+
+      // Set custom label color if provided
+      if (lightningItem.labelColor) {
+        this.resourceUri = vscode.Uri.parse(
+          `lightning://label-color/${lightningItem.labelColor}`
+        );
+      } // Set context values for different item types
       if (lightningItem.type === "file") {
         this.contextValue = "fileItem";
       } else if (lightningItem.type === "dialog") {
@@ -55,6 +65,25 @@ class LightningTreeItem extends vscode.TreeItem {
         this.contextValue = "folderItem";
       }
     }
+  }
+}
+
+class LightningDecorationProvider implements vscode.FileDecorationProvider {
+  onDidChangeFileDecorations?: vscode.Event<
+    undefined | vscode.Uri | vscode.Uri[]
+  >;
+
+  provideFileDecoration(
+    uri: vscode.Uri,
+    token: vscode.CancellationToken
+  ): vscode.ProviderResult<vscode.FileDecoration> {
+    if (uri.scheme === "lightning" && uri.authority === "label-color") {
+      const colorName = uri.path.substring(1); // Remove leading slash
+      return {
+        color: new vscode.ThemeColor(colorName),
+      };
+    }
+    return undefined;
   }
 }
 
@@ -177,6 +206,10 @@ class LightningDataProvider
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
   console.log("Lightning extension is now active!");
+
+  // Register the file decoration provider for custom label colors
+  const decorationProvider = new LightningDecorationProvider();
+  vscode.window.registerFileDecorationProvider(decorationProvider);
 
   // Register the tree data provider
   const treeDataProvider = new LightningDataProvider();

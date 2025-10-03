@@ -6,13 +6,15 @@
       "label": "Open README",
       "path": "README.md",
       "icon": "book",
-      "iconColor": "charts.blue"
+      "iconColor": "charts.blue",
+      "labelColor": "charts.blue"
     },
     {
       "type": "folder",
       "label": "Project Files",
       "icon": "folder-opened",
       "iconColor": "charts.yellow",
+      "labelColor": "charts.yellow",
       "items": [
         {
           "type": "file",
@@ -20,14 +22,16 @@
           "path": "src/extension.ts",
           "line": 123,
           "icon": "zap",
-          "iconColor": "charts.orange"
+          "iconColor": "charts.orange",
+          "labelColor": "charts.orange"
         },
         {
           "type": "file",
           "label": "Open Extension Source",
           "path": "src/extension.ts",
           "icon": "code",
-          "iconColor": "charts.green"
+          "iconColor": "charts.green",
+          "labelColor": "charts.green"
         },
         {
           "type": "file",
@@ -35,7 +39,8 @@
           "path": "src/lightning-types.ts",
           "line": 5,
           "icon": "symbol-interface",
-          "iconColor": "charts.purple"
+          "iconColor": "charts.purple",
+          "labelColor": "charts.purple"
         },
         {
           "type": "file",
@@ -50,6 +55,7 @@
       "label": "Dialog Examples",
       "icon": "comment-discussion",
       "iconColor": "charts.blue",
+      "labelColor": "charts.blue",
       "items": [
         {
           "type": "dialog",
@@ -57,7 +63,8 @@
           "message": "This is an informational message with details about the project!",
           "severity": "info",
           "icon": "info",
-          "iconColor": "charts.blue"
+          "iconColor": "charts.blue",
+          "labelColor": "charts.blue"
         },
         {
           "type": "dialog",
@@ -65,7 +72,8 @@
           "message": "This is a warning message - proceed with caution!",
           "severity": "warning",
           "icon": "warning",
-          "iconColor": "charts.yellow"
+          "iconColor": "charts.yellow",
+          "labelColor": "charts.yellow"
         },
         {
           "type": "dialog",
@@ -73,7 +81,8 @@
           "message": "This is an error message - something went wrong!",
           "severity": "error",
           "icon": "error",
-          "iconColor": "charts.red"
+          "iconColor": "charts.red",
+          "labelColor": "charts.red"
         }
       ]
     },
@@ -82,6 +91,7 @@
       "label": "Nested Example",
       "icon": "target",
       "iconColor": "charts.green",
+      "labelColor": "charts.green",
       "items": [
         {
           "type": "file",
@@ -98,7 +108,8 @@
               "message": "This dialog is nested inside multiple folders!",
               "severity": "info",
               "icon": "star",
-              "iconColor": "charts.yellow"
+              "iconColor": "charts.yellow",
+              "labelColor": "charts.yellow"
             },
             {
               "type": "file",
@@ -106,7 +117,8 @@
               "path": "src/lightning-types.ts",
               "line": 1,
               "icon": "search",
-              "iconColor": "charts.purple"
+              "iconColor": "charts.purple",
+              "labelColor": "charts.purple"
             }
           ]
         }
@@ -115,10 +127,11 @@
     {
       "type": "dialog",
       "label": "Note about Images",
-      "message": "To test image files, add an image to your workspace and create a config entry like: {\"type\": \"file\", \"label\": \"View Logo\", \"path\": \"assets/logo.png\", \"icon\": \"file-media\", \"iconColor\": \"charts.green\"}",
+      "message": "To test image files, add an image to your workspace and create a config entry like: {\"type\": \"file\", \"label\": \"View Logo\", \"path\": \"assets/logo.png\", \"icon\": \"file-media\", \"iconColor\": \"charts.green\", \"labelColor\": \"charts.green\"}",
       "severity": "info",
       "icon": "image",
-      "iconColor": "charts.red"
+      "iconColor": "charts.red",
+      "labelColor": "charts.red"
     }
   ]
 }
