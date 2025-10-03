@@ -2,6 +2,13 @@
   "title": "Lightning Dashboard - Complete Sample",
   "items": [
     {
+      "type": "title",
+      "label": "🌟 Lightning Dashboard - Complete Sample",
+      "icon": "star",
+      "iconColor": "charts.yellow",
+      "labelColor": "charts.yellow"
+    },
+    {
       "type": "file",
       "label": "Open README",
       "path": "README.md",
@@ -93,6 +100,13 @@
       "iconColor": "charts.green",
       "labelColor": "charts.green",
       "items": [
+        {
+          "type": "title",
+          "label": "📂 Nested Section",
+          "icon": "folder-active",
+          "iconColor": "charts.green",
+          "labelColor": "charts.green"
+        },
         {
           "type": "file",
           "label": "Quick README",

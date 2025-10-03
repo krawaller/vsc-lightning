@@ -30,7 +30,9 @@ class LightningTreeItem extends vscode.TreeItem {
         iconName = lightningItem.icon;
       } else {
         // Type-specific default icons
-        if (lightningItem.type === "file") {
+        if (lightningItem.type === "title") {
+          iconName = "symbol-event";
+        } else if (lightningItem.type === "file") {
           iconName = "file";
         } else if (lightningItem.type === "dialog") {
           iconName = "comment-discussion";
@@ -57,7 +59,9 @@ class LightningTreeItem extends vscode.TreeItem {
           `lightning://label-color/${lightningItem.labelColor}`
         );
       } // Set context values for different item types
-      if (lightningItem.type === "file") {
+      if (lightningItem.type === "title") {
+        this.contextValue = "titleItem";
+      } else if (lightningItem.type === "file") {
         this.contextValue = "fileItem";
       } else if (lightningItem.type === "dialog") {
         this.contextValue = "dialogItem";
@@ -158,26 +162,8 @@ class LightningDataProvider
       return [];
     }
 
-    const items: LightningTreeItem[] = [];
-
-    // Add the title as the first item (non-clickable, just for display)
-    const titleItem = new LightningTreeItem(
-      this.configuration.title,
-      undefined, // No command - just a display item
-      undefined // No lightning item - this is just a title
-    );
-    // Style the title item distinctively
-    titleItem.iconPath = new vscode.ThemeIcon("symbol-event");
-    titleItem.tooltip = `Lightning Configuration: ${this.configuration.title}`;
-    titleItem.contextValue = "titleItem";
-    items.push(titleItem);
-
-    // Add the actual configuration items
-    items.push(...this.getChildItems(this.configuration.items));
-
-    return items;
+    return this.getChildItems(this.configuration.items);
   }
-
   private getChildItems(items: LightningItem[]): LightningTreeItem[] {
     return items.map((item) => {
       let command: vscode.Command | undefined;

@@ -5,6 +5,10 @@ export type LightningTreeItemBase = {
   labelColor?: string;
 };
 
+export type LightningTitle = LightningTreeItemBase & {
+  type: "title";
+};
+
 export type LightningFileLink = LightningTreeItemBase & {
   type: "file";
   path: string;
@@ -23,6 +27,7 @@ export type LightningFolder = LightningTreeItemBase & {
 };
 
 export type LightningItem =
+  | LightningTitle
   | LightningFileLink
   | LightningDialogMessage
   | LightningFolder;
