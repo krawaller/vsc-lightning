@@ -814,6 +814,14 @@ export function activate(context: vscode.ExtensionContext) {
 
               if (tabUri && tabUri.fsPath === uri.fsPath) {
                 await vscode.window.tabGroups.close(tab);
+                // Play close sound on successful file close
+                if (
+                  treeItem.lightningItem &&
+                  treeItem.lightningItem.type === "file" &&
+                  treeItem.lightningItem.closeSoundPath
+                ) {
+                  playSound(treeItem.lightningItem.closeSoundPath);
+                }
                 return;
               }
             }
@@ -987,6 +995,14 @@ export function activate(context: vscode.ExtensionContext) {
                   `Failed to revert diff: ${error.message}\n${stderr}`
                 );
               } else {
+                // Play revert sound on success
+                if (
+                  treeItem.lightningItem &&
+                  treeItem.lightningItem.type === "diff" &&
+                  treeItem.lightningItem.revertSoundPath
+                ) {
+                  playSound(treeItem.lightningItem.revertSoundPath);
+                }
                 vscode.window.showInformationMessage(
                   `Successfully reverted diff: ${path.basename(diffPath)}`
                 );

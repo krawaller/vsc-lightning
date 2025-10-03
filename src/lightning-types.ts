@@ -14,12 +14,14 @@ export type LightningDiff = LightningTreeItemBase & {
   type: "diff";
   diffPath: string;
   action?: "apply" | "preview";
+  revertSoundPath?: string;
 };
 
 export type LightningFileLink = LightningTreeItemBase & {
   type: "file";
   path: string;
   line?: number;
+  closeSoundPath?: string;
 };
 
 export type LightningDialogMessage = LightningTreeItemBase & {

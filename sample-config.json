@@ -16,7 +16,8 @@
       "icon": "book",
       "iconColor": "charts.blue",
       "labelColor": "charts.blue",
-      "soundPath": "click.wav"
+      "soundPath": "click.wav",
+      "closeSoundPath": "close-success.wav"
     },
     {
       "type": "folder",
@@ -157,7 +158,8 @@
       "icon": "git-pull-request",
       "iconColor": "charts.purple",
       "labelColor": "charts.purple",
-      "soundPath": "apply.wav"
+      "soundPath": "apply.wav",
+      "revertSoundPath": "revert-success.wav"
     },
     {
       "type": "diff",
