@@ -14,7 +14,7 @@ class LightningTreeItem extends vscode.TreeItem {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.tooltip = this.label;
     this.command = command;
-    
+
     // Set appropriate icons based on item type
     if (lightningItem) {
       if (lightningItem.type === "file") {
@@ -26,9 +26,15 @@ class LightningTreeItem extends vscode.TreeItem {
   }
 }
 
-class LightningDataProvider implements vscode.TreeDataProvider<LightningTreeItem> {
-  private _onDidChangeTreeData: vscode.EventEmitter<LightningTreeItem | undefined | null | void> = new vscode.EventEmitter<LightningTreeItem | undefined | null | void>();
-  readonly onDidChangeTreeData: vscode.Event<LightningTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
+class LightningDataProvider
+  implements vscode.TreeDataProvider<LightningTreeItem>
+{
+  private _onDidChangeTreeData: vscode.EventEmitter<
+    LightningTreeItem | undefined | null | void
+  > = new vscode.EventEmitter<LightningTreeItem | undefined | null | void>();
+  readonly onDidChangeTreeData: vscode.Event<
+    LightningTreeItem | undefined | null | void
+  > = this._onDidChangeTreeData.event;
 
   private configuration: LightningConfiguration | undefined;
   private treeView: vscode.TreeView<LightningTreeItem> | undefined;
@@ -43,21 +49,22 @@ class LightningDataProvider implements vscode.TreeDataProvider<LightningTreeItem
 
   async setConfigurationFile(filePath: string): Promise<void> {
     try {
-      const fileContent = await fs.promises.readFile(filePath, 'utf8');
+      const fileContent = await fs.promises.readFile(filePath, "utf8");
       const config: LightningConfiguration = JSON.parse(fileContent);
-      
+
       this.configuration = config;
-      
+
       // Update the tree view title
       if (this.treeView) {
         this.treeView.title = config.title;
       }
-      
+
       this.refresh();
-      
     } catch (error) {
-      console.error('Error loading configuration file:', error);
-      vscode.window.showErrorMessage(`Failed to load configuration file: ${error}`);
+      console.error("Error loading configuration file:", error);
+      vscode.window.showErrorMessage(
+        `Failed to load configuration file: ${error}`
+      );
     }
   }
 
@@ -74,8 +81,8 @@ class LightningDataProvider implements vscode.TreeDataProvider<LightningTreeItem
           new LightningTreeItem("Open JSON file", {
             command: "lightning.openJsonFile",
             title: "Open JSON file",
-            arguments: []
-          })
+            arguments: [],
+          }),
         ]);
       } else {
         // Show items from the configuration
@@ -90,20 +97,20 @@ class LightningDataProvider implements vscode.TreeDataProvider<LightningTreeItem
       return [];
     }
 
-    return this.configuration.items.map(item => {
+    return this.configuration.items.map((item) => {
       let command: vscode.Command | undefined;
-      
+
       if (item.type === "file") {
         command = {
           command: "lightning.openFile",
           title: "Open File",
-          arguments: [item.path]
+          arguments: [item.path],
         };
       } else if (item.type === "dialog") {
         command = {
           command: "lightning.showDialog",
           title: "Show Dialog",
-          arguments: [item.message, item.severity || "info"]
+          arguments: [item.message, item.severity || "info"],
         };
       }
 
@@ -120,7 +127,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Register the tree data provider
   const treeDataProvider = new LightningDataProvider();
   const treeView = vscode.window.createTreeView("lightningView", {
-    treeDataProvider: treeDataProvider
+    treeDataProvider: treeDataProvider,
   });
 
   // Allow the data provider to update the tree view title
@@ -136,14 +143,16 @@ export function activate(context: vscode.ExtensionContext) {
         canSelectMany: false,
         openLabel: "Select Lightning JSON File",
         filters: {
-          'JSON files': ['json']
-        }
+          "JSON files": ["json"],
+        },
       });
 
       if (fileUri && fileUri[0]) {
         const filePath = fileUri[0].fsPath;
         await treeDataProvider.setConfigurationFile(filePath);
-        vscode.window.showInformationMessage(`Loaded configuration: ${path.basename(filePath)}`);
+        vscode.window.showInformationMessage(
+          `Loaded configuration: ${path.basename(filePath)}`
+        );
       }
     }
   );
@@ -153,7 +162,22 @@ export function activate(context: vscode.ExtensionContext) {
     "lightning.openFile",
     async (filePath: string) => {
       try {
-        const uri = vscode.Uri.file(filePath);
+        let resolvedPath = filePath;
+
+        // If the path is relative, resolve it against the workspace root
+        if (!path.isAbsolute(filePath)) {
+          const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+          if (workspaceFolder) {
+            resolvedPath = path.resolve(workspaceFolder.uri.fsPath, filePath);
+          } else {
+            vscode.window.showErrorMessage(
+              "No workspace folder found to resolve relative path"
+            );
+            return;
+          }
+        }
+
+        const uri = vscode.Uri.file(resolvedPath);
         await vscode.window.showTextDocument(uri);
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to open file: ${filePath}`);
@@ -180,7 +204,11 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(openJsonFileCommand, openFileCommand, showDialogCommand);
+  context.subscriptions.push(
+    openJsonFileCommand,
+    openFileCommand,
+    showDialogCommand
+  );
 }
 
 // This method is called when your extension is deactivated

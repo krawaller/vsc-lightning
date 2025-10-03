@@ -4,7 +4,7 @@
     {
       "type": "file",
       "label": "Open README",
-      "path": "/Users/davidwaller/gitreps/mine/lightning/README.md"
+      "path": "README.md"
     },
     {
       "type": "dialog",
@@ -27,7 +27,17 @@
     {
       "type": "file",
       "label": "Open Extension Source",
-      "path": "/Users/davidwaller/gitreps/mine/lightning/src/extension.ts"
+      "path": "src/extension.ts"
+    },
+    {
+      "type": "file",
+      "label": "Open Package.json",
+      "path": "package.json"
+    },
+    {
+      "type": "file",
+      "label": "Open Types",
+      "path": "src/lightning-types.ts"
     }
   ]
 }
