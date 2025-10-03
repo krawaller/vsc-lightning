@@ -190,6 +190,25 @@
       "icon": "question",
       "iconColor": "charts.blue",
       "labelColor": "charts.blue"
+    },
+    {
+      "type": "quiz",
+      "label": "VS Code Quiz (Menu)",
+      "question": "Which of the following are VS Code features?",
+      "correctAnswers": [
+        "Extensions marketplace",
+        "Integrated terminal",
+        "IntelliSense code completion"
+      ],
+      "wrongAnswers": [
+        "Built-in web browser",
+        "Database management",
+        "Email client functionality"
+      ],
+      "displayMode": "menu",
+      "icon": "question",
+      "iconColor": "charts.green",
+      "labelColor": "charts.green"
     }
   ]
 }

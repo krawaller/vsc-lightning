@@ -213,6 +213,74 @@ class LightningDataProvider
   }
 }
 
+// Function to show quiz in a simple dialog
+async function showQuizInDialog(quizItem: any) {
+  // Combine and randomize answers
+  const allAnswers = [
+    ...quizItem.correctAnswers.map((answer: string) => ({
+      text: answer,
+      correct: true,
+    })),
+    ...quizItem.wrongAnswers.map((answer: string) => ({
+      text: answer,
+      correct: false,
+    })),
+  ];
+
+  // Shuffle the answers
+  for (let i = allAnswers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allAnswers[i], allAnswers[j]] = [allAnswers[j], allAnswers[i]];
+  }
+
+  // Create the quiz content for the dialog
+  const questionText =
+    `${quizItem.question}\n\n` +
+    allAnswers
+      .map((answer, index) => `${index + 1}. ${answer.text}`)
+      .join("\n");
+
+  // Show initial dialog with question and answers using QuickPick for better text alignment
+  const quickPick = vscode.window.createQuickPick();
+  quickPick.title = quizItem.question;
+  quickPick.placeholder = "Select 'Reveal Answers' to see the correct answers";
+  quickPick.items = [
+    ...allAnswers.map((answer, index) => ({
+      label: `${index + 1}. ${answer.text}`,
+      detail: "", // We'll update this after reveal
+    })),
+    { label: "$(eye) Reveal Answers", detail: "Click to show correct answers" },
+  ];
+  quickPick.canSelectMany = false;
+
+  quickPick.onDidAccept(() => {
+    const selected = quickPick.selectedItems[0];
+    if (selected && selected.label.includes("Reveal Answers")) {
+      quickPick.hide();
+      // Show revealed answers in a new QuickPick
+      showRevealedAnswers(quizItem.question, allAnswers);
+    }
+  });
+
+  quickPick.show();
+}
+
+// Function to show revealed answers with correct/incorrect indicators
+function showRevealedAnswers(question: string, allAnswers: any[]) {
+  const revealQuickPick = vscode.window.createQuickPick();
+  revealQuickPick.title = question;
+  revealQuickPick.placeholder = "Quiz Results - Press Escape to close";
+  revealQuickPick.items = allAnswers.map((answer, index) => {
+    const icon = answer.correct ? "$(check)" : "$(x)";
+    return {
+      label: `${icon} ${index + 1}. ${answer.text}`,
+      detail: "",
+    };
+  });
+  revealQuickPick.canSelectMany = false;
+  revealQuickPick.show();
+}
+
 // Function to show quiz dialog with randomized answers
 async function showQuizDialog(quizItem: any) {
   // Combine and randomize answers
@@ -417,12 +485,17 @@ export function activate(context: vscode.ExtensionContext) {
     "lightning.showQuiz",
     async (quizItem: any) => {
       if (quizItem && quizItem.type === "quiz") {
-        await showQuizDialog(quizItem);
+        // Check display mode - default to webview if not specified
+        const displayMode = quizItem.displayMode || "webview";
+
+        if (displayMode === "menu") {
+          await showQuizInDialog(quizItem);
+        } else {
+          await showQuizDialog(quizItem);
+        }
       }
     }
-  );
-
-  // Register the command to open JSON file
+  ); // Register the command to open JSON file
   const openJsonFileCommand = vscode.commands.registerCommand(
     "lightning.openJsonFile",
     async () => {
