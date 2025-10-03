@@ -58,9 +58,21 @@
         "command": "lightning.revertDiff",
         "title": "Revert Diff",
         "icon": "$(close)"
+      },
+      {
+        "command": "lightning.resetConfig",
+        "title": "Reset Config",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
+      "view/title": [
+        {
+          "command": "lightning.resetConfig",
+          "when": "view == lightningView",
+          "group": "navigation"
+        }
+      ],
       "view/item/context": [
         {
           "command": "lightning.closeFile",
@@ -68,8 +80,13 @@
           "group": "inline"
         },
         {
+          "command": "lightning.applyDiff",
+          "when": "view == lightningView && viewItem == lightning-diff",
+          "group": "inline"
+        },
+        {
           "command": "lightning.revertDiff",
-          "when": "view == lightningView && viewItem == diffItem",
+          "when": "view == lightningView && viewItem == lightning-diff",
           "group": "inline"
         }
       ]

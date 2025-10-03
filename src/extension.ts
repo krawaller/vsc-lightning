@@ -116,6 +116,11 @@ class LightningDataProvider
     this._onDidChangeTreeData.fire();
   }
 
+  resetToInitialState(): void {
+    this.configuration = undefined;
+    this.refresh();
+  }
+
   async setConfigurationFile(filePath: string): Promise<void> {
     try {
       const fileContent = await fs.promises.readFile(filePath, "utf8");
@@ -215,6 +220,15 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Allow the data provider to update the tree view title
   treeDataProvider.setTreeView(treeView);
+
+  // Register the command to reset config
+  const resetConfigCommand = vscode.commands.registerCommand(
+    "lightning.resetConfig",
+    () => {
+      // Reset to initial state
+      treeDataProvider.resetToInitialState();
+    }
+  );
 
   // Register the command to open JSON file
   const openJsonFileCommand = vscode.commands.registerCommand(
@@ -558,6 +572,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    resetConfigCommand,
     openJsonFileCommand,
     openFileCommand,
     showDialogCommand,
