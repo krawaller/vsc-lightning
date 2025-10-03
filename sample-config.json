@@ -172,6 +172,24 @@
       "icon": "rocket",
       "iconColor": "charts.orange",
       "labelColor": "charts.orange"
+    },
+    {
+      "type": "quiz",
+      "label": "TypeScript Quiz",
+      "question": "Which of the following are key features of TypeScript?",
+      "correctAnswers": [
+        "Static typing",
+        "Compile-time error checking",
+        "Transpiles to JavaScript"
+      ],
+      "wrongAnswers": [
+        "Runtime type checking",
+        "Slower execution than JavaScript",
+        "Requires a virtual machine to run"
+      ],
+      "icon": "question",
+      "iconColor": "charts.blue",
+      "labelColor": "charts.blue"
     }
   ]
 }

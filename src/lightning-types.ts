@@ -32,12 +32,20 @@ export type LightningFolder = LightningTreeItemBase & {
   items: LightningItem[];
 };
 
+export type LightningQuiz = LightningTreeItemBase & {
+  type: "quiz";
+  question: string;
+  wrongAnswers: string[];
+  correctAnswers: string[];
+};
+
 export type LightningItem =
   | LightningTitle
   | LightningFileLink
   | LightningDialogMessage
   | LightningFolder
-  | LightningDiff;
+  | LightningDiff
+  | LightningQuiz;
 
 export type LightningConfiguration = {
   title: string;

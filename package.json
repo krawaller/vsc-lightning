@@ -63,6 +63,10 @@
         "command": "lightning.resetConfig",
         "title": "Reset Config",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "lightning.showQuiz",
+        "title": "Show Quiz"
       }
     ],
     "menus": {
