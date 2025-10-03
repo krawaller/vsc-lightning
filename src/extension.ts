@@ -149,11 +149,11 @@ class LightningDataProvider
     if (!element) {
       // Root items
       if (!this.configuration) {
-        // Show "Open JSON file" button when no configuration is loaded
+        // Show "Open configuration" button when no configuration is loaded
         return Promise.resolve([
-          new LightningTreeItem("Open JSON file", {
+          new LightningTreeItem("Open configuration", {
             command: "lightning.openJsonFile",
-            title: "Open JSON file",
+            title: "Open configuration",
             arguments: [],
           }),
         ]);
