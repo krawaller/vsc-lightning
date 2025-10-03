@@ -44,13 +44,21 @@ export type LightningQuiz = LightningTreeItemBase & {
   revealSoundPath?: string;
 };
 
+export type LightningBrowser = LightningTreeItemBase & {
+  type: "browser";
+  url: string;
+  browserType?: "simple" | "external";
+  title?: string;
+};
+
 export type LightningItem =
   | LightningTitle
   | LightningFileLink
   | LightningDialogMessage
   | LightningFolder
   | LightningDiff
-  | LightningQuiz;
+  | LightningQuiz
+  | LightningBrowser;
 
 export type LightningConfiguration = {
   title: string;

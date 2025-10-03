@@ -99,6 +99,46 @@
     },
     {
       "type": "folder",
+      "label": "Browser Examples",
+      "icon": "globe",
+      "iconColor": "charts.purple",
+      "labelColor": "charts.purple",
+      "items": [
+        {
+          "type": "browser",
+          "label": "VS Code API Docs",
+          "url": "https://code.visualstudio.com/api",
+          "browserType": "simple",
+          "title": "VS Code Extension API Documentation",
+          "icon": "globe",
+          "iconColor": "charts.blue",
+          "labelColor": "charts.blue",
+          "soundPath": "click.wav"
+        },
+        {
+          "type": "browser",
+          "label": "Open GitHub (External)",
+          "url": "https://github.com/microsoft/vscode",
+          "browserType": "external",
+          "title": "VS Code GitHub Repository",
+          "icon": "mark-github",
+          "iconColor": "charts.purple",
+          "labelColor": "charts.purple"
+        },
+        {
+          "type": "browser",
+          "label": "Local Demo Server",
+          "url": "http://localhost:3000",
+          "browserType": "simple",
+          "title": "Development Server",
+          "icon": "server",
+          "iconColor": "charts.green",
+          "labelColor": "charts.green"
+        }
+      ]
+    },
+    {
+      "type": "folder",
       "label": "Nested Example",
       "icon": "target",
       "iconColor": "charts.green",
