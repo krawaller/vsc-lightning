@@ -652,25 +652,21 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  // Register the command to toggle sound mute
+  // Register the command to mute sounds
   const toggleMuteCommand = vscode.commands.registerCommand(
     "lightning.toggleMute",
     () => {
-      const currentMuted = getSoundMuted();
-      setSoundMuted(!currentMuted);
-      const status = !currentMuted ? "muted" : "unmuted";
-      vscode.window.showInformationMessage(`Lightning sounds ${status}`);
+      setSoundMuted(true);
+      vscode.window.showInformationMessage("Lightning sounds muted");
     }
   );
 
-  // Register the command to toggle sound mute (muted state with checkmark)
-  const toggleMuteMutedCommand = vscode.commands.registerCommand(
-    "lightning.toggleMuteMuted",
+  // Register the command to unmute sounds
+  const toggleUnmuteCommand = vscode.commands.registerCommand(
+    "lightning.toggleUnmute",
     () => {
-      const currentMuted = getSoundMuted();
-      setSoundMuted(!currentMuted);
-      const status = !currentMuted ? "muted" : "unmuted";
-      vscode.window.showInformationMessage(`Lightning sounds ${status}`);
+      setSoundMuted(false);
+      vscode.window.showInformationMessage("Lightning sounds unmuted");
     }
   );
 
@@ -1077,7 +1073,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     resetConfigCommand,
     toggleMuteCommand,
-    toggleMuteMutedCommand,
+    toggleUnmuteCommand,
     openJsonFileCommand,
     openFileCommand,
     showDialogCommand,
