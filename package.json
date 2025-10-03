@@ -33,12 +33,16 @@
     },
     "commands": [
       {
-        "command": "lightning.showHello",
-        "title": "Show Hello"
+        "command": "lightning.openJsonFile",
+        "title": "Open JSON File"
       },
       {
-        "command": "lightning.openFolder",
-        "title": "Open Folder"
+        "command": "lightning.openFile",
+        "title": "Open File"
+      },
+      {
+        "command": "lightning.showDialog",
+        "title": "Show Dialog"
       }
     ]
   },

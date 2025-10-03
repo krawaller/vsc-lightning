@@ -3,35 +3,34 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import { LightningConfiguration, LightningItem } from "./lightning-types";
 
 class LightningTreeItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
     public readonly command?: vscode.Command,
-    public readonly filePath?: string
+    public readonly lightningItem?: LightningItem
   ) {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.tooltip = this.label;
     this.command = command;
-
-    // Add file icon for file items
-    if (filePath) {
-      this.resourceUri = vscode.Uri.file(filePath);
+    
+    // Set appropriate icons based on item type
+    if (lightningItem) {
+      if (lightningItem.type === "file") {
+        this.iconPath = new vscode.ThemeIcon("file");
+      } else if (lightningItem.type === "dialog") {
+        this.iconPath = new vscode.ThemeIcon("comment-discussion");
+      }
     }
   }
 }
 
-class LightningDataProvider
-  implements vscode.TreeDataProvider<LightningTreeItem>
-{
-  private _onDidChangeTreeData: vscode.EventEmitter<
-    LightningTreeItem | undefined | null | void
-  > = new vscode.EventEmitter<LightningTreeItem | undefined | null | void>();
-  readonly onDidChangeTreeData: vscode.Event<
-    LightningTreeItem | undefined | null | void
-  > = this._onDidChangeTreeData.event;
+class LightningDataProvider implements vscode.TreeDataProvider<LightningTreeItem> {
+  private _onDidChangeTreeData: vscode.EventEmitter<LightningTreeItem | undefined | null | void> = new vscode.EventEmitter<LightningTreeItem | undefined | null | void>();
+  readonly onDidChangeTreeData: vscode.Event<LightningTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-  private selectedFolder: string | undefined;
+  private configuration: LightningConfiguration | undefined;
   private treeView: vscode.TreeView<LightningTreeItem> | undefined;
 
   setTreeView(treeView: vscode.TreeView<LightningTreeItem>): void {
@@ -42,12 +41,24 @@ class LightningDataProvider
     this._onDidChangeTreeData.fire();
   }
 
-  setFolder(folderPath: string): void {
-    this.selectedFolder = folderPath;
-    if (this.treeView) {
-      this.treeView.title = path.basename(folderPath);
+  async setConfigurationFile(filePath: string): Promise<void> {
+    try {
+      const fileContent = await fs.promises.readFile(filePath, 'utf8');
+      const config: LightningConfiguration = JSON.parse(fileContent);
+      
+      this.configuration = config;
+      
+      // Update the tree view title
+      if (this.treeView) {
+        this.treeView.title = config.title;
+      }
+      
+      this.refresh();
+      
+    } catch (error) {
+      console.error('Error loading configuration file:', error);
+      vscode.window.showErrorMessage(`Failed to load configuration file: ${error}`);
     }
-    this.refresh();
   }
 
   getTreeItem(element: LightningTreeItem): vscode.TreeItem {
@@ -57,45 +68,47 @@ class LightningDataProvider
   getChildren(element?: LightningTreeItem): Thenable<LightningTreeItem[]> {
     if (!element) {
       // Root items
-      if (!this.selectedFolder) {
-        // Show "Open folder" button when no folder is selected
+      if (!this.configuration) {
+        // Show "Open JSON file" button when no configuration is loaded
         return Promise.resolve([
-          new LightningTreeItem("Open folder", {
-            command: "lightning.openFolder",
-            title: "Open folder",
-            arguments: [],
-          }),
+          new LightningTreeItem("Open JSON file", {
+            command: "lightning.openJsonFile",
+            title: "Open JSON file",
+            arguments: []
+          })
         ]);
       } else {
-        // Show files in the selected folder
-        return this.getFilesInFolder(this.selectedFolder);
+        // Show items from the configuration
+        return Promise.resolve(this.getConfigurationItems());
       }
     }
     return Promise.resolve([]);
   }
 
-  private async getFilesInFolder(
-    folderPath: string
-  ): Promise<LightningTreeItem[]> {
-    try {
-      const files = await fs.promises.readdir(folderPath);
-      const fileItems: LightningTreeItem[] = [];
+  private getConfigurationItems(): LightningTreeItem[] {
+    if (!this.configuration) {
+      return [];
+    }
 
-      for (const file of files) {
-        const fullPath = path.join(folderPath, file);
-        const stat = await fs.promises.stat(fullPath);
-
-        // Only show files (not directories for now)
-        if (stat.isFile()) {
-          fileItems.push(new LightningTreeItem(file, undefined, fullPath));
-        }
+    return this.configuration.items.map(item => {
+      let command: vscode.Command | undefined;
+      
+      if (item.type === "file") {
+        command = {
+          command: "lightning.openFile",
+          title: "Open File",
+          arguments: [item.path]
+        };
+      } else if (item.type === "dialog") {
+        command = {
+          command: "lightning.showDialog",
+          title: "Show Dialog",
+          arguments: [item.message, item.severity || "info"]
+        };
       }
 
-      return fileItems.sort((a, b) => a.label.localeCompare(b.label));
-    } catch (error) {
-      console.error("Error reading folder:", error);
-      return [new LightningTreeItem("Error reading folder", undefined)];
-    }
+      return new LightningTreeItem(item.label, command, item);
+    });
   }
 }
 
@@ -107,42 +120,67 @@ export function activate(context: vscode.ExtensionContext) {
   // Register the tree data provider
   const treeDataProvider = new LightningDataProvider();
   const treeView = vscode.window.createTreeView("lightningView", {
-    treeDataProvider: treeDataProvider,
+    treeDataProvider: treeDataProvider
   });
 
   // Allow the data provider to update the tree view title
   treeDataProvider.setTreeView(treeView);
 
-  // Register the command to open folder
-  const openFolderCommand = vscode.commands.registerCommand(
-    "lightning.openFolder",
+  // Register the command to open JSON file
+  const openJsonFileCommand = vscode.commands.registerCommand(
+    "lightning.openJsonFile",
     async () => {
-      const folderUri = await vscode.window.showOpenDialog({
-        canSelectFiles: false,
-        canSelectFolders: true,
+      const fileUri = await vscode.window.showOpenDialog({
+        canSelectFiles: true,
+        canSelectFolders: false,
         canSelectMany: false,
-        openLabel: "Select Folder",
+        openLabel: "Select Lightning JSON File",
+        filters: {
+          'JSON files': ['json']
+        }
       });
 
-      if (folderUri && folderUri[0]) {
-        const folderPath = folderUri[0].fsPath;
-        treeDataProvider.setFolder(folderPath);
-        vscode.window.showInformationMessage(
-          `Selected folder: ${path.basename(folderPath)}`
-        );
+      if (fileUri && fileUri[0]) {
+        const filePath = fileUri[0].fsPath;
+        await treeDataProvider.setConfigurationFile(filePath);
+        vscode.window.showInformationMessage(`Loaded configuration: ${path.basename(filePath)}`);
       }
     }
   );
 
-  // Register the command for the hello dialog (keeping for backwards compatibility)
-  const helloCommand = vscode.commands.registerCommand(
-    "lightning.showHello",
-    () => {
-      vscode.window.showInformationMessage("Hello from Lightning!");
+  // Register the command to open files
+  const openFileCommand = vscode.commands.registerCommand(
+    "lightning.openFile",
+    async (filePath: string) => {
+      try {
+        const uri = vscode.Uri.file(filePath);
+        await vscode.window.showTextDocument(uri);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to open file: ${filePath}`);
+      }
     }
   );
 
-  context.subscriptions.push(openFolderCommand, helloCommand);
+  // Register the command to show dialog
+  const showDialogCommand = vscode.commands.registerCommand(
+    "lightning.showDialog",
+    (message: string, severity: "info" | "warning" | "error") => {
+      switch (severity) {
+        case "error":
+          vscode.window.showErrorMessage(message);
+          break;
+        case "warning":
+          vscode.window.showWarningMessage(message);
+          break;
+        case "info":
+        default:
+          vscode.window.showInformationMessage(message);
+          break;
+      }
+    }
+  );
+
+  context.subscriptions.push(openJsonFileCommand, openFileCommand, showDialogCommand);
 }
 
 // This method is called when your extension is deactivated

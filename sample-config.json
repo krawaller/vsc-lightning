@@ -1,0 +1,33 @@
+{
+  "title": "My Lightning Dashboard",
+  "items": [
+    {
+      "type": "file",
+      "label": "Open README",
+      "path": "/Users/davidwaller/gitreps/mine/lightning/README.md"
+    },
+    {
+      "type": "dialog",
+      "label": "Show Info Message",
+      "message": "This is an informational message!",
+      "severity": "info"
+    },
+    {
+      "type": "dialog",
+      "label": "Show Warning",
+      "message": "This is a warning message!",
+      "severity": "warning"
+    },
+    {
+      "type": "dialog",
+      "label": "Show Error",
+      "message": "This is an error message!",
+      "severity": "error"
+    },
+    {
+      "type": "file",
+      "label": "Open Extension Source",
+      "path": "/Users/davidwaller/gitreps/mine/lightning/src/extension.ts"
+    }
+  ]
+}
