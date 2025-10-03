@@ -214,7 +214,7 @@ class LightningDataProvider
 }
 
 // Function to show quiz in actual modal dialogs
-async function showQuizInModalDialog(quizItem: any) {
+async function showQuizDialog(quizItem: any) {
   // Combine and randomize answers
   const allAnswers = [
     ...quizItem.correctAnswers.map((answer: string) => ({
@@ -265,7 +265,7 @@ async function showQuizInModalDialog(quizItem: any) {
 }
 
 // Function to show quiz in menu format (QuickPick)
-async function showQuizInDialog(quizItem: any) {
+async function showQuizMenu(quizItem: any) {
   // Combine and randomize answers
   const allAnswers = [
     ...quizItem.correctAnswers.map((answer: string) => ({
@@ -333,7 +333,7 @@ function showRevealedAnswers(question: string, allAnswers: any[]) {
 }
 
 // Function to show quiz dialog with randomized answers
-async function showQuizDialog(quizItem: any) {
+async function showQuizWebview(quizItem: any) {
   // Combine and randomize answers
   const allAnswers = [
     ...quizItem.correctAnswers.map((answer: string) => ({
@@ -540,11 +540,11 @@ export function activate(context: vscode.ExtensionContext) {
         const displayMode = quizItem.displayMode || "webview";
 
         if (displayMode === "menu") {
-          await showQuizInDialog(quizItem); // This is the QuickPick function
+          await showQuizMenu(quizItem);
         } else if (displayMode === "dialog") {
-          await showQuizInModalDialog(quizItem); // This is the InputBox function
+          await showQuizDialog(quizItem);
         } else {
-          await showQuizDialog(quizItem); // This is the webview function
+          await showQuizWebview(quizItem);
         }
       }
     }
