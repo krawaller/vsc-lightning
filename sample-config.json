@@ -195,7 +195,8 @@
       ],
       "icon": "question",
       "iconColor": "charts.blue",
-      "labelColor": "charts.blue"
+      "labelColor": "charts.blue",
+      "revealSoundPath": "reveal-answers.wav"
     },
     {
       "type": "quiz",
@@ -214,7 +215,8 @@
       "displayMode": "menu",
       "icon": "question",
       "iconColor": "charts.green",
-      "labelColor": "charts.green"
+      "labelColor": "charts.green",
+      "revealSoundPath": "reveal-answers.wav"
     },
     {
       "type": "quiz",

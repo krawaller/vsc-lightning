@@ -257,6 +257,11 @@ async function showQuizDialog(quizItem: any) {
   );
 
   if (action === "Reveal Answers") {
+    // Play reveal sound if specified
+    if (quizItem.revealSoundPath) {
+      playSound(quizItem.revealSoundPath);
+    }
+
     // Show revealed answers
     const revealedContent =
       `${quizItem.question}\n\n` +
@@ -318,7 +323,7 @@ async function showQuizMenu(quizItem: any) {
     if (selected && selected.label.includes("Reveal Answers")) {
       quickPick.hide();
       // Show revealed answers in a new QuickPick
-      showRevealedAnswers(quizItem.question, allAnswers);
+      showRevealedAnswers(quizItem.question, allAnswers, quizItem);
     }
   });
 
@@ -326,7 +331,16 @@ async function showQuizMenu(quizItem: any) {
 }
 
 // Function to show revealed answers with correct/incorrect indicators
-function showRevealedAnswers(question: string, allAnswers: any[]) {
+function showRevealedAnswers(
+  question: string,
+  allAnswers: any[],
+  quizItem?: any
+) {
+  // Play reveal sound if specified
+  if (quizItem && quizItem.revealSoundPath) {
+    playSound(quizItem.revealSoundPath);
+  }
+
   const revealQuickPick = vscode.window.createQuickPick();
   revealQuickPick.title = question;
   revealQuickPick.placeholder = "Quiz Results - Press Escape to close";
