@@ -23,14 +23,35 @@ class LightningTreeItem extends vscode.TreeItem {
 
     // Set appropriate icons and context values based on item type
     if (lightningItem) {
+      // Use custom icon if provided, otherwise fall back to type-specific defaults
+      let iconName: string;
+
+      if (lightningItem.icon) {
+        iconName = lightningItem.icon;
+      } else {
+        // Type-specific default icons
+        if (lightningItem.type === "file") {
+          iconName = "file";
+        } else if (lightningItem.type === "dialog") {
+          iconName = "comment-discussion";
+        } else if (lightningItem.type === "folder") {
+          iconName = "folder";
+        } else {
+          iconName = "circle-outline"; // fallback icon
+        }
+      }
+      
+      // Create icon with optional color
+      if (lightningItem.iconColor) {
+        this.iconPath = new vscode.ThemeIcon(iconName, new vscode.ThemeColor(lightningItem.iconColor));
+      } else {
+        this.iconPath = new vscode.ThemeIcon(iconName);
+      }      // Set context values for different item types
       if (lightningItem.type === "file") {
-        this.iconPath = new vscode.ThemeIcon("file");
         this.contextValue = "fileItem";
       } else if (lightningItem.type === "dialog") {
-        this.iconPath = new vscode.ThemeIcon("comment-discussion");
         this.contextValue = "dialogItem";
       } else if (lightningItem.type === "folder") {
-        this.iconPath = new vscode.ThemeIcon("folder");
         this.contextValue = "folderItem";
       }
     }

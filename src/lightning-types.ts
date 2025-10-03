@@ -1,5 +1,7 @@
 export type LightningTreeItemBase = {
   label: string;
+  icon?: string;
+  iconColor?: string;
 };
 
 export type LightningFileLink = LightningTreeItemBase & {

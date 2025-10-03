@@ -3,85 +3,110 @@
   "items": [
     {
       "type": "file",
-      "label": "📖 Open README",
-      "path": "README.md"
+      "label": "Open README",
+      "path": "README.md",
+      "icon": "book",
+      "iconColor": "charts.blue"
     },
     {
       "type": "folder",
-      "label": "📁 Project Files",
+      "label": "Project Files",
+      "icon": "folder-opened",
+      "iconColor": "charts.yellow",
       "items": [
         {
           "type": "file",
-          "label": "⚡ Go to activate function",
+          "label": "Go to activate function",
           "path": "src/extension.ts",
-          "line": 123
+          "line": 123,
+          "icon": "zap",
+          "iconColor": "charts.orange"
         },
         {
           "type": "file",
-          "label": "🔧 Open Extension Source",
-          "path": "src/extension.ts"
+          "label": "Open Extension Source",
+          "path": "src/extension.ts",
+          "icon": "code",
+          "iconColor": "charts.green"
         },
         {
           "type": "file",
-          "label": "🏷️ Go to LightningFileLink type",
+          "label": "Go to LightningFileLink type",
           "path": "src/lightning-types.ts",
-          "line": 5
+          "line": 5,
+          "icon": "symbol-interface",
+          "iconColor": "charts.purple"
         },
         {
           "type": "file",
-          "label": "📦 Open Package.json",
-          "path": "package.json"
+          "label": "Open Package.json",
+          "path": "package.json",
+          "icon": "package"
         }
       ]
     },
     {
       "type": "folder",
-      "label": "💬 Dialog Examples",
+      "label": "Dialog Examples",
+      "icon": "comment-discussion",
+      "iconColor": "charts.blue",
       "items": [
         {
           "type": "dialog",
-          "label": "ℹ️ Show Info Message",
+          "label": "Show Info Message",
           "message": "This is an informational message with details about the project!",
-          "severity": "info"
+          "severity": "info",
+          "icon": "info",
+          "iconColor": "charts.blue"
         },
         {
           "type": "dialog",
-          "label": "⚠️ Show Warning",
+          "label": "Show Warning",
           "message": "This is a warning message - proceed with caution!",
-          "severity": "warning"
+          "severity": "warning",
+          "icon": "warning",
+          "iconColor": "charts.yellow"
         },
         {
           "type": "dialog",
-          "label": "❌ Show Error",
+          "label": "Show Error",
           "message": "This is an error message - something went wrong!",
-          "severity": "error"
+          "severity": "error",
+          "icon": "error",
+          "iconColor": "charts.red"
         }
       ]
     },
     {
       "type": "folder",
-      "label": "🎯 Nested Example",
+      "label": "Nested Example",
+      "icon": "target",
+      "iconColor": "charts.green",
       "items": [
         {
           "type": "file",
-          "label": "📄 Quick README",
+          "label": "Quick README",
           "path": "README.md"
         },
         {
           "type": "folder",
-          "label": "📂 Deep Nesting",
+          "label": "Deep Nesting",
           "items": [
             {
               "type": "dialog",
-              "label": "🌟 Nested Dialog",
+              "label": "Nested Dialog",
               "message": "This dialog is nested inside multiple folders!",
-              "severity": "info"
+              "severity": "info",
+              "icon": "star",
+              "iconColor": "charts.yellow"
             },
             {
               "type": "file",
-              "label": "🔍 Deep File",
+              "label": "Deep File",
               "path": "src/lightning-types.ts",
-              "line": 1
+              "line": 1,
+              "icon": "search",
+              "iconColor": "charts.purple"
             }
           ]
         }
@@ -89,9 +114,11 @@
     },
     {
       "type": "dialog",
-      "label": "🖼️ Note about Images",
-      "message": "To test image files, add an image to your workspace and create a config entry like: {\"type\": \"file\", \"label\": \"View Logo\", \"path\": \"assets/logo.png\"}",
-      "severity": "info"
+      "label": "Note about Images",
+      "message": "To test image files, add an image to your workspace and create a config entry like: {\"type\": \"file\", \"label\": \"View Logo\", \"path\": \"assets/logo.png\", \"icon\": \"file-media\", \"iconColor\": \"charts.green\"}",
+      "severity": "info",
+      "icon": "image",
+      "iconColor": "charts.red"
     }
   ]
 }
