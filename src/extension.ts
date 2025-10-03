@@ -474,10 +474,7 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(
                   `Successfully applied diff: ${path.basename(diffPath)}`
                 );
-                // Refresh file explorer to show changes
-                vscode.commands.executeCommand(
-                  "workbench.files.action.refreshFilesExplorer"
-                );
+                // Note: Removed file explorer refresh to avoid switching to Explorer tab
               }
             }
           );
