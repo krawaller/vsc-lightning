@@ -32,6 +32,11 @@ class LightningDataProvider
   > = this._onDidChangeTreeData.event;
 
   private selectedFolder: string | undefined;
+  private treeView: vscode.TreeView<LightningTreeItem> | undefined;
+
+  setTreeView(treeView: vscode.TreeView<LightningTreeItem>): void {
+    this.treeView = treeView;
+  }
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
@@ -39,6 +44,9 @@ class LightningDataProvider
 
   setFolder(folderPath: string): void {
     this.selectedFolder = folderPath;
+    if (this.treeView) {
+      this.treeView.title = path.basename(folderPath);
+    }
     this.refresh();
   }
 
@@ -98,9 +106,12 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Register the tree data provider
   const treeDataProvider = new LightningDataProvider();
-  vscode.window.createTreeView("lightningView", {
+  const treeView = vscode.window.createTreeView("lightningView", {
     treeDataProvider: treeDataProvider,
   });
+
+  // Allow the data provider to update the tree view title
+  treeDataProvider.setTreeView(treeView);
 
   // Register the command to open folder
   const openFolderCommand = vscode.commands.registerCommand(
