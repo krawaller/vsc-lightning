@@ -11,7 +11,13 @@ class LightningTreeItem extends vscode.TreeItem {
     public readonly command?: vscode.Command,
     public readonly lightningItem?: LightningItem
   ) {
-    super(label, vscode.TreeItemCollapsibleState.None);
+    // Set collapsible state based on item type
+    const collapsibleState =
+      lightningItem?.type === "folder"
+        ? vscode.TreeItemCollapsibleState.Collapsed
+        : vscode.TreeItemCollapsibleState.None;
+
+    super(label, collapsibleState);
     this.tooltip = this.label;
     this.command = command;
 
@@ -21,6 +27,8 @@ class LightningTreeItem extends vscode.TreeItem {
         this.iconPath = new vscode.ThemeIcon("file");
       } else if (lightningItem.type === "dialog") {
         this.iconPath = new vscode.ThemeIcon("comment-discussion");
+      } else if (lightningItem.type === "folder") {
+        this.iconPath = new vscode.ThemeIcon("folder");
       }
     }
   }
@@ -88,8 +96,15 @@ class LightningDataProvider
         // Show items from the configuration
         return Promise.resolve(this.getConfigurationItems());
       }
+    } else {
+      // Handle folder expansion - show items of the folder
+      if (element.lightningItem?.type === "folder") {
+        return Promise.resolve(
+          this.getChildItems(element.lightningItem.items)
+        );
+      }
+      return Promise.resolve([]);
     }
-    return Promise.resolve([]);
   }
 
   private getConfigurationItems(): LightningTreeItem[] {
@@ -97,7 +112,11 @@ class LightningDataProvider
       return [];
     }
 
-    return this.configuration.items.map((item) => {
+    return this.getChildItems(this.configuration.items);
+  }
+
+  private getChildItems(items: LightningItem[]): LightningTreeItem[] {
+    return items.map((item) => {
       let command: vscode.Command | undefined;
 
       if (item.type === "file") {
@@ -113,6 +132,7 @@ class LightningDataProvider
           arguments: [item.message, item.severity || "info"],
         };
       }
+      // Note: folder items don't need commands as they're handled by expansion
 
       return new LightningTreeItem(item.label, command, item);
     });

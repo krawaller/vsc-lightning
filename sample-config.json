@@ -7,44 +7,85 @@
       "path": "README.md"
     },
     {
-      "type": "file",
-      "label": "⚡ Go to activate function",
-      "path": "src/extension.ts",
-      "line": 123
+      "type": "folder",
+      "label": "📁 Project Files",
+      "items": [
+        {
+          "type": "file",
+          "label": "⚡ Go to activate function",
+          "path": "src/extension.ts",
+          "line": 123
+        },
+        {
+          "type": "file",
+          "label": "🔧 Open Extension Source",
+          "path": "src/extension.ts"
+        },
+        {
+          "type": "file",
+          "label": "🏷️ Go to LightningFileLink type",
+          "path": "src/lightning-types.ts",
+          "line": 5
+        },
+        {
+          "type": "file",
+          "label": "📦 Open Package.json",
+          "path": "package.json"
+        }
+      ]
     },
     {
-      "type": "file",
-      "label": "🔧 Open Extension Source",
-      "path": "src/extension.ts"
+      "type": "folder",
+      "label": "💬 Dialog Examples",
+      "items": [
+        {
+          "type": "dialog",
+          "label": "ℹ️ Show Info Message",
+          "message": "This is an informational message with details about the project!",
+          "severity": "info"
+        },
+        {
+          "type": "dialog",
+          "label": "⚠️ Show Warning",
+          "message": "This is a warning message - proceed with caution!",
+          "severity": "warning"
+        },
+        {
+          "type": "dialog",
+          "label": "❌ Show Error",
+          "message": "This is an error message - something went wrong!",
+          "severity": "error"
+        }
+      ]
     },
     {
-      "type": "file",
-      "label": "🏷️ Go to LightningFileLink type",
-      "path": "src/lightning-types.ts",
-      "line": 5
-    },
-    {
-      "type": "file",
-      "label": "📦 Open Package.json",
-      "path": "package.json"
-    },
-    {
-      "type": "dialog",
-      "label": "ℹ️ Show Info Message",
-      "message": "This is an informational message with details about the project!",
-      "severity": "info"
-    },
-    {
-      "type": "dialog",
-      "label": "⚠️ Show Warning",
-      "message": "This is a warning message - proceed with caution!",
-      "severity": "warning"
-    },
-    {
-      "type": "dialog",
-      "label": "❌ Show Error",
-      "message": "This is an error message - something went wrong!",
-      "severity": "error"
+      "type": "folder",
+      "label": "🎯 Nested Example",
+      "items": [
+        {
+          "type": "file",
+          "label": "📄 Quick README",
+          "path": "README.md"
+        },
+        {
+          "type": "folder",
+          "label": "📂 Deep Nesting",
+          "items": [
+            {
+              "type": "dialog",
+              "label": "🌟 Nested Dialog",
+              "message": "This dialog is nested inside multiple folders!",
+              "severity": "info"
+            },
+            {
+              "type": "file",
+              "label": "🔍 Deep File",
+              "path": "src/lightning-types.ts",
+              "line": 1
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "dialog",

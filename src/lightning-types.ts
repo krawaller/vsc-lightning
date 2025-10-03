@@ -14,7 +14,15 @@ export type LightningDialogMessage = LightningTreeItemBase & {
   severity?: "info" | "warning" | "error";
 };
 
-export type LightningItem = LightningFileLink | LightningDialogMessage;
+export type LightningFolder = LightningTreeItemBase & {
+  type: "folder";
+  items: LightningItem[];
+};
+
+export type LightningItem =
+  | LightningFileLink
+  | LightningDialogMessage
+  | LightningFolder;
 
 export type LightningConfiguration = {
   title: string;
