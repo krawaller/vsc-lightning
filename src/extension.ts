@@ -489,12 +489,81 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // Register the command to revert diff files
+  const revertDiffCommand = vscode.commands.registerCommand(
+    "lightning.revertDiff",
+    async (treeItem: LightningTreeItem) => {
+      if (treeItem.lightningItem?.type === "diff") {
+        const diffPath = treeItem.lightningItem.diffPath;
+
+        try {
+          let resolvedPath = diffPath;
+
+          // If the path is relative, resolve it against the workspace root
+          if (!path.isAbsolute(diffPath)) {
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            if (workspaceFolder) {
+              resolvedPath = path.resolve(workspaceFolder.uri.fsPath, diffPath);
+            } else {
+              vscode.window.showErrorMessage(
+                "No workspace folder found to resolve relative path"
+              );
+              return;
+            }
+          }
+
+          // Check if the diff file exists
+          try {
+            await fs.promises.access(resolvedPath);
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Diff file not found: ${path.basename(diffPath)}`
+            );
+            return;
+          }
+
+          // Get the workspace root for git commands
+          const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+          if (!workspaceFolder) {
+            vscode.window.showErrorMessage(
+              "No workspace folder found for git operations"
+            );
+            return;
+          }
+
+          // Execute git apply --reverse command immediately
+          const { exec } = require("child_process");
+          const workingDir = workspaceFolder.uri.fsPath;
+
+          exec(
+            `git apply --reverse "${resolvedPath}"`,
+            { cwd: workingDir },
+            (error: any, stdout: string, stderr: string) => {
+              if (error) {
+                vscode.window.showErrorMessage(
+                  `Failed to revert diff: ${error.message}\n${stderr}`
+                );
+              } else {
+                vscode.window.showInformationMessage(
+                  `Successfully reverted diff: ${path.basename(diffPath)}`
+                );
+              }
+            }
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(`Failed to revert diff: ${diffPath}`);
+        }
+      }
+    }
+  );
+
   context.subscriptions.push(
     openJsonFileCommand,
     openFileCommand,
     showDialogCommand,
     closeFileCommand,
-    applyDiffCommand
+    applyDiffCommand,
+    revertDiffCommand
   );
 }
 

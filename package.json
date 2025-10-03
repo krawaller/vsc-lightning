@@ -53,6 +53,11 @@
         "command": "lightning.applyDiff",
         "title": "Apply Diff",
         "icon": "$(git-pull-request)"
+      },
+      {
+        "command": "lightning.revertDiff",
+        "title": "Revert Diff",
+        "icon": "$(close)"
       }
     ],
     "menus": {
@@ -60,6 +65,11 @@
         {
           "command": "lightning.closeFile",
           "when": "view == lightningView && viewItem == fileItem",
+          "group": "inline"
+        },
+        {
+          "command": "lightning.revertDiff",
+          "when": "view == lightningView && viewItem == diffItem",
           "group": "inline"
         }
       ]
