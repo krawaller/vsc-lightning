@@ -40,13 +40,19 @@ export type LightningQuiz = LightningTreeItemBase & {
   displayMode?: "webview" | "menu" | "dialog";
 };
 
+export type LightningSound = LightningTreeItemBase & {
+  type: "sound";
+  soundPath: string;
+};
+
 export type LightningItem =
   | LightningTitle
   | LightningFileLink
   | LightningDialogMessage
   | LightningFolder
   | LightningDiff
-  | LightningQuiz;
+  | LightningQuiz
+  | LightningSound;
 
 export type LightningConfiguration = {
   title: string;

@@ -67,6 +67,10 @@
       {
         "command": "lightning.showQuiz",
         "title": "Show Quiz"
+      },
+      {
+        "command": "lightning.playSound",
+        "title": "Play Sound"
       }
     ],
     "menus": {

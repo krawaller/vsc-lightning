@@ -42,6 +42,8 @@ class LightningTreeItem extends vscode.TreeItem {
           iconName = "git-pull-request";
         } else if (lightningItem.type === "quiz") {
           iconName = "question";
+        } else if (lightningItem.type === "sound") {
+          iconName = "unmute";
         } else {
           iconName = "circle-outline"; // fallback icon
         }
@@ -75,6 +77,8 @@ class LightningTreeItem extends vscode.TreeItem {
         this.contextValue = "lightning-diff";
       } else if (lightningItem.type === "quiz") {
         this.contextValue = "lightning-quiz";
+      } else if (lightningItem.type === "sound") {
+        this.contextValue = "lightning-sound";
       }
     }
   }
@@ -204,6 +208,12 @@ class LightningDataProvider
           command: "lightning.showQuiz",
           title: "Show Quiz",
           arguments: [item],
+        };
+      } else if (item.type === "sound") {
+        command = {
+          command: "lightning.playSound",
+          title: "Play Sound",
+          arguments: [item.soundPath],
         };
       }
       // Note: folder items don't need commands as they're handled by expansion
@@ -504,6 +514,60 @@ function getQuizWebviewContent(question: string, answers: any[]): string {
 </html>`;
 }
 
+// Function to play sound files
+async function playSound(soundPath: string) {
+  try {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+      vscode.window.showErrorMessage("No workspace folder found");
+      return;
+    }
+
+    const workspaceFolder = workspaceFolders[0];
+    const resolvedPath = path.resolve(workspaceFolder.uri.fsPath, soundPath);
+
+    // Check if file exists
+    if (!fs.existsSync(resolvedPath)) {
+      vscode.window.showErrorMessage(`Sound file not found: ${soundPath}`);
+      return;
+    }
+
+    // Use child_process to play the sound file
+    const { exec } = require("child_process");
+    
+    // Determine the command based on the operating system
+    let command: string;
+    const platform = process.platform;
+    
+    if (platform === "darwin") {
+      // macOS
+      command = `afplay "${resolvedPath}"`;
+    } else if (platform === "win32") {
+      // Windows
+      command = `powershell -c (New-Object Media.SoundPlayer "${resolvedPath}").PlaySync()`;
+    } else {
+      // Linux and others
+      command = `aplay "${resolvedPath}" 2>/dev/null || paplay "${resolvedPath}" 2>/dev/null || ffplay -nodisp -autoexit "${resolvedPath}" 2>/dev/null`;
+    }
+
+    exec(command, (error: any, stdout: string, stderr: string) => {
+      if (error) {
+        vscode.window.showErrorMessage(
+          `Failed to play sound: ${error.message}`
+        );
+      } else {
+        vscode.window.showInformationMessage(
+          `Playing: ${path.basename(soundPath)}`
+        );
+      }
+    });
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `Error playing sound: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -547,6 +611,14 @@ export function activate(context: vscode.ExtensionContext) {
           await showQuizWebview(quizItem);
         }
       }
+    }
+  );
+
+  // Register the command to play sound
+  const playSoundCommand = vscode.commands.registerCommand(
+    "lightning.playSound",
+    async (soundPath: string) => {
+      await playSound(soundPath);
     }
   ); // Register the command to open JSON file
   const openJsonFileCommand = vscode.commands.registerCommand(
@@ -895,6 +967,7 @@ export function activate(context: vscode.ExtensionContext) {
     openFileCommand,
     showDialogCommand,
     showQuizCommand,
+    playSoundCommand,
     closeFileCommand,
     applyDiffCommand,
     revertDiffCommand
