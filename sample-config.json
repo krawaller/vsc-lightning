@@ -7,6 +7,12 @@
       "path": "README.md"
     },
     {
+      "type": "file",
+      "label": "Go to activate function",
+      "path": "src/extension.ts",
+      "line": 123
+    },
+    {
       "type": "dialog",
       "label": "Show Info Message",
       "message": "This is an informational message!",
@@ -31,13 +37,14 @@
     },
     {
       "type": "file",
-      "label": "Open Package.json",
-      "path": "package.json"
+      "label": "Go to LightningFileLink type",
+      "path": "src/lightning-types.ts",
+      "line": 5
     },
     {
       "type": "file",
-      "label": "Open Types",
-      "path": "src/lightning-types.ts"
+      "label": "Open Package.json",
+      "path": "package.json"
     }
   ]
 }

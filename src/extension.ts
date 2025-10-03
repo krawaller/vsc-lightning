@@ -104,7 +104,7 @@ class LightningDataProvider
         command = {
           command: "lightning.openFile",
           title: "Open File",
-          arguments: [item.path],
+          arguments: [item.path, item.line],
         };
       } else if (item.type === "dialog") {
         command = {
@@ -160,7 +160,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Register the command to open files
   const openFileCommand = vscode.commands.registerCommand(
     "lightning.openFile",
-    async (filePath: string) => {
+    async (filePath: string, lineNumber?: number) => {
       try {
         let resolvedPath = filePath;
 
@@ -178,7 +178,15 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const uri = vscode.Uri.file(resolvedPath);
-        await vscode.window.showTextDocument(uri);
+        const document = await vscode.window.showTextDocument(uri);
+
+        // If a line number is specified, scroll to that line
+        if (lineNumber !== undefined && lineNumber > 0) {
+          const position = new vscode.Position(lineNumber - 1, 0); // VS Code uses 0-based line numbers
+          const range = new vscode.Range(position, position);
+          document.selection = new vscode.Selection(position, position);
+          document.revealRange(range, vscode.TextEditorRevealType.InCenter);
+        }
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to open file: ${filePath}`);
       }

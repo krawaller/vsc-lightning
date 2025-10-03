@@ -5,6 +5,7 @@ export type LightningTreeItemBase = {
 export type LightningFileLink = LightningTreeItemBase & {
   type: "file";
   path: string;
+  line?: number;
 };
 
 export type LightningDialogMessage = LightningTreeItemBase & {
