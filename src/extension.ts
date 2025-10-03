@@ -1022,6 +1022,55 @@ export function activate(context: vscode.ExtensionContext) {
             document.selection = new vscode.Selection(position, position);
             document.revealRange(range, vscode.TextEditorRevealType.InCenter);
           }
+
+          // Apply highlighting if specified
+          if (item.highlightStartLine !== undefined) {
+            const startLine = Math.max(0, item.highlightStartLine - 1); // Convert to 0-based
+            const endLine = item.highlightEndLine
+              ? Math.max(0, item.highlightEndLine - 1)
+              : startLine;
+
+            const highlightRange = new vscode.Range(
+              new vscode.Position(startLine, 0),
+              new vscode.Position(endLine, Number.MAX_SAFE_INTEGER) // End of line
+            );
+
+            if (item.highlightType === "selection") {
+              // Set selection to highlight the range
+              document.selection = new vscode.Selection(
+                highlightRange.start,
+                highlightRange.end
+              );
+              document.revealRange(
+                highlightRange,
+                vscode.TextEditorRevealType.InCenter
+              );
+            } else {
+              // Use text editor decorations for visual highlighting
+              const decorationType =
+                vscode.window.createTextEditorDecorationType({
+                  backgroundColor:
+                    item.highlightColor || "rgba(255, 255, 0, 0.3)", // Default yellow highlight
+                  border: "1px solid rgba(255, 255, 0, 0.8)",
+                  isWholeLine: true,
+                });
+
+              // Apply the decoration
+              document.setDecorations(decorationType, [highlightRange]);
+
+              // Remove decoration after specified duration (default 5 seconds)
+              const duration =
+                item.highlightDuration !== undefined
+                  ? item.highlightDuration
+                  : 5000;
+              if (duration > 0) {
+                setTimeout(() => {
+                  decorationType.dispose();
+                }, duration);
+              }
+              // If duration is 0, decoration stays permanent until manually cleared
+            }
+          }
         }
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to open file: ${item.path}`);

@@ -58,6 +58,32 @@
           "label": "Open Package.json",
           "path": "package.json",
           "icon": "package"
+        },
+        {
+          "type": "file",
+          "label": "Highlight Lightning Types (Selection)",
+          "path": "src/lightning-types.ts",
+          "line": 20,
+          "highlightStartLine": 18,
+          "highlightEndLine": 25,
+          "highlightType": "selection",
+          "icon": "highlight",
+          "iconColor": "charts.orange",
+          "labelColor": "charts.orange"
+        },
+        {
+          "type": "file",
+          "label": "Highlight Extension Activate (Decoration)",
+          "path": "src/extension.ts",
+          "line": 123,
+          "highlightStartLine": 120,
+          "highlightEndLine": 130,
+          "highlightType": "decoration",
+          "highlightColor": "rgba(0, 255, 0, 0.2)",
+          "highlightDuration": 3000,
+          "icon": "symbol-event",
+          "iconColor": "charts.yellow",
+          "labelColor": "charts.yellow"
         }
       ]
     },

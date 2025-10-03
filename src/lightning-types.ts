@@ -22,6 +22,12 @@ export type LightningFileLink = LightningTreeItemBase & {
   path: string;
   line?: number;
   closeSoundPath?: string;
+  // Highlight properties for presentation purposes
+  highlightStartLine?: number;
+  highlightEndLine?: number;
+  highlightType?: "selection" | "decoration";
+  highlightColor?: string;
+  highlightDuration?: number; // Duration in milliseconds, 0 = permanent
 };
 
 export type LightningDialogMessage = LightningTreeItemBase & {
