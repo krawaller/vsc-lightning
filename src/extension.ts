@@ -579,11 +579,8 @@ async function playSound(soundPath: string) {
         vscode.window.showErrorMessage(
           `Failed to play sound: ${error.message}`
         );
-      } else {
-        vscode.window.showInformationMessage(
-          `Playing: ${path.basename(soundPath)}`
-        );
       }
+      // Sound plays silently without notification
     });
   } catch (error) {
     vscode.window.showErrorMessage(
