@@ -35,6 +35,10 @@
       {
         "command": "lightning.showHello",
         "title": "Show Hello"
+      },
+      {
+        "command": "lightning.openFolder",
+        "title": "Open Folder"
       }
     ]
   },

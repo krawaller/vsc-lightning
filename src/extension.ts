@@ -1,21 +1,47 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 
 class LightningTreeItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
-    public readonly command?: vscode.Command
+    public readonly command?: vscode.Command,
+    public readonly filePath?: string
   ) {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.tooltip = this.label;
     this.command = command;
+
+    // Add file icon for file items
+    if (filePath) {
+      this.resourceUri = vscode.Uri.file(filePath);
+    }
   }
 }
 
 class LightningDataProvider
   implements vscode.TreeDataProvider<LightningTreeItem>
 {
+  private _onDidChangeTreeData: vscode.EventEmitter<
+    LightningTreeItem | undefined | null | void
+  > = new vscode.EventEmitter<LightningTreeItem | undefined | null | void>();
+  readonly onDidChangeTreeData: vscode.Event<
+    LightningTreeItem | undefined | null | void
+  > = this._onDidChangeTreeData.event;
+
+  private selectedFolder: string | undefined;
+
+  refresh(): void {
+    this._onDidChangeTreeData.fire();
+  }
+
+  setFolder(folderPath: string): void {
+    this.selectedFolder = folderPath;
+    this.refresh();
+  }
+
   getTreeItem(element: LightningTreeItem): vscode.TreeItem {
     return element;
   }
@@ -23,15 +49,45 @@ class LightningDataProvider
   getChildren(element?: LightningTreeItem): Thenable<LightningTreeItem[]> {
     if (!element) {
       // Root items
-      return Promise.resolve([
-        new LightningTreeItem("Say Hello", {
-          command: "lightning.showHello",
-          title: "Say Hello",
-          arguments: [],
-        }),
-      ]);
+      if (!this.selectedFolder) {
+        // Show "Open folder" button when no folder is selected
+        return Promise.resolve([
+          new LightningTreeItem("Open folder", {
+            command: "lightning.openFolder",
+            title: "Open folder",
+            arguments: [],
+          }),
+        ]);
+      } else {
+        // Show files in the selected folder
+        return this.getFilesInFolder(this.selectedFolder);
+      }
     }
     return Promise.resolve([]);
+  }
+
+  private async getFilesInFolder(
+    folderPath: string
+  ): Promise<LightningTreeItem[]> {
+    try {
+      const files = await fs.promises.readdir(folderPath);
+      const fileItems: LightningTreeItem[] = [];
+
+      for (const file of files) {
+        const fullPath = path.join(folderPath, file);
+        const stat = await fs.promises.stat(fullPath);
+
+        // Only show files (not directories for now)
+        if (stat.isFile()) {
+          fileItems.push(new LightningTreeItem(file, undefined, fullPath));
+        }
+      }
+
+      return fileItems.sort((a, b) => a.label.localeCompare(b.label));
+    } catch (error) {
+      console.error("Error reading folder:", error);
+      return [new LightningTreeItem("Error reading folder", undefined)];
+    }
   }
 }
 
@@ -46,7 +102,28 @@ export function activate(context: vscode.ExtensionContext) {
     treeDataProvider: treeDataProvider,
   });
 
-  // Register the command for the hello dialog
+  // Register the command to open folder
+  const openFolderCommand = vscode.commands.registerCommand(
+    "lightning.openFolder",
+    async () => {
+      const folderUri = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        openLabel: "Select Folder",
+      });
+
+      if (folderUri && folderUri[0]) {
+        const folderPath = folderUri[0].fsPath;
+        treeDataProvider.setFolder(folderPath);
+        vscode.window.showInformationMessage(
+          `Selected folder: ${path.basename(folderPath)}`
+        );
+      }
+    }
+  );
+
+  // Register the command for the hello dialog (keeping for backwards compatibility)
   const helloCommand = vscode.commands.registerCommand(
     "lightning.showHello",
     () => {
@@ -54,7 +131,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(helloCommand);
+  context.subscriptions.push(openFolderCommand, helloCommand);
 }
 
 // This method is called when your extension is deactivated
