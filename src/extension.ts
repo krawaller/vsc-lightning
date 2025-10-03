@@ -135,7 +135,16 @@ class LightningDataProvider
 
   resetToInitialState(): void {
     this.configuration = undefined;
+    vscode.commands.executeCommand(
+      "setContext",
+      "lightning.configLoaded",
+      false
+    );
     this.refresh();
+  }
+
+  hasConfiguration(): boolean {
+    return this.configuration !== undefined;
   }
 
   async setConfigurationFile(filePath: string): Promise<void> {
@@ -144,6 +153,11 @@ class LightningDataProvider
       const config: LightningConfiguration = JSON.parse(fileContent);
 
       this.configuration = config;
+      vscode.commands.executeCommand(
+        "setContext",
+        "lightning.configLoaded",
+        true
+      );
 
       this.refresh();
     } catch (error) {
@@ -614,8 +628,9 @@ async function playSound(soundPath: string) {
 export function activate(context: vscode.ExtensionContext) {
   console.log("Lightning extension is now active!");
 
-  // Initialize the mute context
+  // Initialize the mute context and config loaded context
   vscode.commands.executeCommand("setContext", "lightning.soundsMuted", false);
+  vscode.commands.executeCommand("setContext", "lightning.configLoaded", false);
 
   // Register the file decoration provider for custom label colors
   const decorationProvider = new LightningDecorationProvider();
@@ -649,6 +664,30 @@ export function activate(context: vscode.ExtensionContext) {
     () => {
       // Reset to initial state
       treeDataProvider.resetToInitialState();
+    }
+  );
+
+  // Register the command to open configuration
+  const openConfigurationCommand = vscode.commands.registerCommand(
+    "lightning.openConfiguration",
+    async () => {
+      const fileUri = await vscode.window.showOpenDialog({
+        canSelectFiles: true,
+        canSelectFolders: false,
+        canSelectMany: false,
+        openLabel: "Select Lightning JSON File",
+        filters: {
+          "JSON files": ["json"],
+        },
+      });
+
+      if (fileUri && fileUri[0]) {
+        const filePath = fileUri[0].fsPath;
+        await treeDataProvider.setConfigurationFile(filePath);
+        vscode.window.showInformationMessage(
+          `Loaded configuration: ${path.basename(filePath)}`
+        );
+      }
     }
   );
 
@@ -1072,6 +1111,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     resetConfigCommand,
+    openConfigurationCommand,
     toggleMuteCommand,
     toggleUnmuteCommand,
     openJsonFileCommand,

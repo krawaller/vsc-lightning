@@ -79,13 +79,23 @@
       {
         "command": "lightning.toggleUnmute",
         "title": "Unmute Sounds"
+      },
+      {
+        "command": "lightning.openConfiguration",
+        "title": "Open Configuration",
+        "icon": "$(file-directory)"
       }
     ],
     "menus": {
       "view/title": [
         {
           "command": "lightning.resetConfig",
-          "when": "view == lightningView",
+          "when": "view == lightningView && lightning.configLoaded",
+          "group": "1_config"
+        },
+        {
+          "command": "lightning.openConfiguration",
+          "when": "view == lightningView && !lightning.configLoaded",
           "group": "1_config"
         },
         {
