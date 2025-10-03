@@ -10,6 +10,8 @@ let isSoundMuted = false;
 
 function setSoundMuted(muted: boolean) {
   isSoundMuted = muted;
+  // Update VS Code context for menu display
+  vscode.commands.executeCommand("setContext", "lightning.soundsMuted", muted);
 }
 
 function getSoundMuted(): boolean {
@@ -555,7 +557,7 @@ async function playSound(soundPath: string) {
   if (getSoundMuted()) {
     return; // Exit early if muted
   }
-  
+
   try {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) {
@@ -612,6 +614,9 @@ async function playSound(soundPath: string) {
 export function activate(context: vscode.ExtensionContext) {
   console.log("Lightning extension is now active!");
 
+  // Initialize the mute context
+  vscode.commands.executeCommand("setContext", "lightning.soundsMuted", false);
+
   // Register the file decoration provider for custom label colors
   const decorationProvider = new LightningDecorationProvider();
   vscode.window.registerFileDecorationProvider(decorationProvider);
@@ -650,6 +655,17 @@ export function activate(context: vscode.ExtensionContext) {
   // Register the command to toggle sound mute
   const toggleMuteCommand = vscode.commands.registerCommand(
     "lightning.toggleMute",
+    () => {
+      const currentMuted = getSoundMuted();
+      setSoundMuted(!currentMuted);
+      const status = !currentMuted ? "muted" : "unmuted";
+      vscode.window.showInformationMessage(`Lightning sounds ${status}`);
+    }
+  );
+
+  // Register the command to toggle sound mute (muted state with checkmark)
+  const toggleMuteMutedCommand = vscode.commands.registerCommand(
+    "lightning.toggleMuteMuted",
     () => {
       const currentMuted = getSoundMuted();
       setSoundMuted(!currentMuted);
@@ -1061,6 +1077,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     resetConfigCommand,
     toggleMuteCommand,
+    toggleMuteMutedCommand,
     openJsonFileCommand,
     openFileCommand,
     showDialogCommand,
