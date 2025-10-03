@@ -41,6 +41,7 @@ export type LightningQuiz = LightningTreeItemBase & {
   wrongAnswers: string[];
   correctAnswers: string[];
   displayMode?: "webview" | "menu" | "dialog";
+  revealSoundPath?: string;
 };
 
 export type LightningItem =

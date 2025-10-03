@@ -234,7 +234,8 @@
       "icon": "question",
       "iconColor": "charts.orange",
       "labelColor": "charts.orange",
-      "soundPath": "quiz.wav"
+      "soundPath": "quiz.wav",
+      "revealSoundPath": "reveal-answers.wav"
     }
   ]
 }

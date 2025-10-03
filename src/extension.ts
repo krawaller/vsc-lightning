@@ -384,6 +384,10 @@ async function showQuizWebview(quizItem: any) {
             command: "showAnswers",
             answers: allAnswers,
           });
+          // Play reveal sound if specified
+          if (quizItem.revealSoundPath) {
+            playSound(quizItem.revealSoundPath);
+          }
           return;
       }
     },
