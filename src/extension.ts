@@ -178,14 +178,47 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const uri = vscode.Uri.file(resolvedPath);
-        const document = await vscode.window.showTextDocument(uri);
 
-        // If a line number is specified, scroll to that line
-        if (lineNumber !== undefined && lineNumber > 0) {
-          const position = new vscode.Position(lineNumber - 1, 0); // VS Code uses 0-based line numbers
-          const range = new vscode.Range(position, position);
-          document.selection = new vscode.Selection(position, position);
-          document.revealRange(range, vscode.TextEditorRevealType.InCenter);
+        // Check if this is an image or binary file
+        const extension = path.extname(resolvedPath).toLowerCase();
+        const imageExtensions = [
+          ".png",
+          ".jpg",
+          ".jpeg",
+          ".gif",
+          ".bmp",
+          ".svg",
+          ".webp",
+          ".ico",
+        ];
+        const binaryExtensions = [
+          ".pdf",
+          ".zip",
+          ".tar",
+          ".gz",
+          ".exe",
+          ".dll",
+          ".so",
+          ".dylib",
+        ];
+
+        if (
+          imageExtensions.includes(extension) ||
+          binaryExtensions.includes(extension)
+        ) {
+          // Use VS Code's default file opening behavior for images and binary files
+          await vscode.commands.executeCommand("vscode.open", uri);
+        } else {
+          // For text files, use showTextDocument to support line numbers
+          const document = await vscode.window.showTextDocument(uri);
+
+          // If a line number is specified, scroll to that line
+          if (lineNumber !== undefined && lineNumber > 0) {
+            const position = new vscode.Position(lineNumber - 1, 0); // VS Code uses 0-based line numbers
+            const range = new vscode.Range(position, position);
+            document.selection = new vscode.Selection(position, position);
+            document.revealRange(range, vscode.TextEditorRevealType.InCenter);
+          }
         }
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to open file: ${filePath}`);

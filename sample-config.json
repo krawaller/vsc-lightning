@@ -1,50 +1,56 @@
 {
-  "title": "My Lightning Dashboard",
+  "title": "Lightning Dashboard - Complete Sample",
   "items": [
     {
       "type": "file",
-      "label": "Open README",
+      "label": "📖 Open README",
       "path": "README.md"
     },
     {
       "type": "file",
-      "label": "Go to activate function",
+      "label": "⚡ Go to activate function",
       "path": "src/extension.ts",
       "line": 123
     },
     {
-      "type": "dialog",
-      "label": "Show Info Message",
-      "message": "This is an informational message!",
-      "severity": "info"
-    },
-    {
-      "type": "dialog",
-      "label": "Show Warning",
-      "message": "This is a warning message!",
-      "severity": "warning"
-    },
-    {
-      "type": "dialog",
-      "label": "Show Error",
-      "message": "This is an error message!",
-      "severity": "error"
-    },
-    {
       "type": "file",
-      "label": "Open Extension Source",
+      "label": "🔧 Open Extension Source",
       "path": "src/extension.ts"
     },
     {
       "type": "file",
-      "label": "Go to LightningFileLink type",
+      "label": "🏷️ Go to LightningFileLink type",
       "path": "src/lightning-types.ts",
       "line": 5
     },
     {
       "type": "file",
-      "label": "Open Package.json",
+      "label": "📦 Open Package.json",
       "path": "package.json"
+    },
+    {
+      "type": "dialog",
+      "label": "ℹ️ Show Info Message",
+      "message": "This is an informational message with details about the project!",
+      "severity": "info"
+    },
+    {
+      "type": "dialog",
+      "label": "⚠️ Show Warning",
+      "message": "This is a warning message - proceed with caution!",
+      "severity": "warning"
+    },
+    {
+      "type": "dialog",
+      "label": "❌ Show Error",
+      "message": "This is an error message - something went wrong!",
+      "severity": "error"
+    },
+    {
+      "type": "dialog",
+      "label": "🖼️ Note about Images",
+      "message": "To test image files, add an image to your workspace and create a config entry like: {\"type\": \"file\", \"label\": \"View Logo\", \"path\": \"assets/logo.png\"}",
+      "severity": "info"
     }
   ]
 }
