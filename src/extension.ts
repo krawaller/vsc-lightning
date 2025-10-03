@@ -21,14 +21,17 @@ class LightningTreeItem extends vscode.TreeItem {
     this.tooltip = this.label;
     this.command = command;
 
-    // Set appropriate icons based on item type
+    // Set appropriate icons and context values based on item type
     if (lightningItem) {
       if (lightningItem.type === "file") {
         this.iconPath = new vscode.ThemeIcon("file");
+        this.contextValue = "fileItem";
       } else if (lightningItem.type === "dialog") {
         this.iconPath = new vscode.ThemeIcon("comment-discussion");
+        this.contextValue = "dialogItem";
       } else if (lightningItem.type === "folder") {
         this.iconPath = new vscode.ThemeIcon("folder");
+        this.contextValue = "folderItem";
       }
     }
   }
@@ -99,9 +102,7 @@ class LightningDataProvider
     } else {
       // Handle folder expansion - show items of the folder
       if (element.lightningItem?.type === "folder") {
-        return Promise.resolve(
-          this.getChildItems(element.lightningItem.items)
-        );
+        return Promise.resolve(this.getChildItems(element.lightningItem.items));
       }
       return Promise.resolve([]);
     }
@@ -265,10 +266,76 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // Register the command to close file tabs
+  const closeFileCommand = vscode.commands.registerCommand(
+    "lightning.closeFile",
+    async (treeItem: LightningTreeItem) => {
+      if (treeItem.lightningItem?.type === "file") {
+        const filePath = treeItem.lightningItem.path;
+
+        try {
+          let resolvedPath = filePath;
+
+          // If the path is relative, resolve it against the workspace root
+          if (!path.isAbsolute(filePath)) {
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            if (workspaceFolder) {
+              resolvedPath = path.resolve(workspaceFolder.uri.fsPath, filePath);
+            } else {
+              vscode.window.showErrorMessage(
+                "No workspace folder found to resolve relative path"
+              );
+              return;
+            }
+          }
+
+          const uri = vscode.Uri.file(resolvedPath);
+
+          // Find and close any open tab with this file
+          const tabGroups = vscode.window.tabGroups;
+          for (const tabGroup of tabGroups.all) {
+            for (const tab of tabGroup.tabs) {
+              // Check for different tab input types
+              let tabUri: vscode.Uri | undefined;
+
+              if (tab.input instanceof vscode.TabInputText) {
+                // Text files (code, markdown, etc.)
+                tabUri = tab.input.uri;
+              } else if (tab.input instanceof vscode.TabInputCustom) {
+                // Custom editors (some image viewers, etc.)
+                tabUri = tab.input.uri;
+              } else if (
+                tab.input &&
+                typeof tab.input === "object" &&
+                "uri" in tab.input
+              ) {
+                // Generic check for any tab input with a uri property
+                tabUri = (tab.input as any).uri;
+              }
+
+              if (tabUri && tabUri.fsPath === uri.fsPath) {
+                await vscode.window.tabGroups.close(tab);
+                return;
+              }
+            }
+          }
+
+          // If no tab was found, show a message
+          vscode.window.showInformationMessage(
+            `File "${path.basename(filePath)}" is not currently open`
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(`Failed to close file: ${filePath}`);
+        }
+      }
+    }
+  );
+
   context.subscriptions.push(
     openJsonFileCommand,
     openFileCommand,
-    showDialogCommand
+    showDialogCommand,
+    closeFileCommand
   );
 }
 

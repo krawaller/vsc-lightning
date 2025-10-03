@@ -43,8 +43,22 @@
       {
         "command": "lightning.showDialog",
         "title": "Show Dialog"
+      },
+      {
+        "command": "lightning.closeFile",
+        "title": "Close File",
+        "icon": "$(close)"
       }
-    ]
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "lightning.closeFile",
+          "when": "view == lightningView && viewItem == fileItem",
+          "group": "inline"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
