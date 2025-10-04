@@ -701,6 +701,15 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // Register the same command with the legacy name for backward compatibility
+  const openJsonFileCommand = vscode.commands.registerCommand(
+    "lightning.openJsonFile",
+    async () => {
+      // Delegate to the main implementation
+      await vscode.commands.executeCommand("lightning.openConfiguration");
+    }
+  );
+
   // Register the command to mute sounds
   const toggleMuteCommand = vscode.commands.registerCommand(
     "lightning.toggleMute",
@@ -930,30 +939,6 @@ export function activate(context: vscode.ExtensionContext) {
     "lightning.playSound",
     async (item: any) => {
       await playSoundIfPresent(item);
-    }
-  );
-
-  // Register the command to open JSON file
-  const openJsonFileCommand = vscode.commands.registerCommand(
-    "lightning.openJsonFile",
-    async () => {
-      const fileUri = await vscode.window.showOpenDialog({
-        canSelectFiles: true,
-        canSelectFolders: false,
-        canSelectMany: false,
-        openLabel: "Select Lightning JSON File",
-        filters: {
-          "JSON files": ["json"],
-        },
-      });
-
-      if (fileUri && fileUri[0]) {
-        const filePath = fileUri[0].fsPath;
-        await treeDataProvider.setConfigurationFile(filePath);
-        vscode.window.showInformationMessage(
-          `Loaded configuration: ${path.basename(filePath)}`
-        );
-      }
     }
   );
 
