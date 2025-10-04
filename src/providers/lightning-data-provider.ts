@@ -6,15 +6,30 @@ import { LightningConfiguration, LightningItem } from "../lightning-types";
 // Default configuration for each Lightning item type
 const DEFAULT_ITEM_CONFIG: Record<
   LightningItem["type"],
-  { defaultIcon: string }
+  { defaultIcon: string; command?: { command: string; title: string } }
 > = {
   title: { defaultIcon: "symbol-event" },
-  file: { defaultIcon: "file" },
-  dialog: { defaultIcon: "comment-discussion" },
+  file: {
+    defaultIcon: "file",
+    command: { command: "lightning.openFile", title: "Open File" },
+  },
+  dialog: {
+    defaultIcon: "comment-discussion",
+    command: { command: "lightning.showDialog", title: "Show Dialog" },
+  },
   folder: { defaultIcon: "folder" },
-  diff: { defaultIcon: "git-pull-request" },
-  quiz: { defaultIcon: "question" },
-  browser: { defaultIcon: "globe" },
+  diff: {
+    defaultIcon: "git-pull-request",
+    command: { command: "lightning.applyDiff", title: "Apply Diff" },
+  },
+  quiz: {
+    defaultIcon: "question",
+    command: { command: "lightning.showQuiz", title: "Show Quiz" },
+  },
+  browser: {
+    defaultIcon: "globe",
+    command: { command: "lightning.openBrowser", title: "Open Browser" },
+  },
 };
 
 export class LightningTreeItem extends vscode.TreeItem {
@@ -190,36 +205,15 @@ export class LightningDataProvider
             arguments: [item],
           };
         }
-      } else if (item.type === "file") {
-        command = {
-          command: "lightning.openFile",
-          title: "Open File",
-          arguments: [item],
-        };
-      } else if (item.type === "dialog") {
-        command = {
-          command: "lightning.showDialog",
-          title: "Show Dialog",
-          arguments: [item],
-        };
-      } else if (item.type === "diff") {
-        command = {
-          command: "lightning.applyDiff",
-          title: "Apply Diff",
-          arguments: [item], // Pass full item instead of individual properties
-        };
-      } else if (item.type === "quiz") {
-        command = {
-          command: "lightning.showQuiz",
-          title: "Show Quiz",
-          arguments: [item],
-        };
-      } else if (item.type === "browser") {
-        command = {
-          command: "lightning.openBrowser",
-          title: "Open Browser",
-          arguments: [item],
-        };
+      } else {
+        // Use centralized command configuration for other types
+        const commandConfig = DEFAULT_ITEM_CONFIG[item.type].command;
+        if (commandConfig) {
+          command = {
+            ...commandConfig,
+            arguments: [item],
+          };
+        }
       }
       // Note: folder items don't need commands as they're handled by expansion
 
