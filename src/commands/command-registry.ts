@@ -14,10 +14,10 @@ import { openBrowser } from "../features/browser-manager";
 import {
   openFile,
   closeFile,
-  showDialog,
   applyDiff,
   revertDiff,
 } from "../features/file-manager";
+import { showDialog } from "../features/dialog-manager";
 
 export function registerCommands(
   context: vscode.ExtensionContext,
