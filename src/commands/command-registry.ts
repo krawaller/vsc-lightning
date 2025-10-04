@@ -4,6 +4,14 @@ import {
   LightningDataProvider,
   LightningTreeItem,
 } from "../providers/lightning-data-provider";
+import {
+  LightningQuiz,
+  LightningBrowser,
+  LightningItem,
+  LightningFileLink,
+  LightningDialogMessage,
+  LightningDiff,
+} from "../lightning-types";
 import { setSoundMuted, playSoundIfPresent } from "../utils/sound-manager";
 import {
   showQuizDialog,
@@ -77,7 +85,7 @@ export function registerCommands(
   // Register the command to show quiz
   const showQuizCommand = vscode.commands.registerCommand(
     "lightning.showQuiz",
-    async (quizItem: any) => {
+    async (quizItem: LightningQuiz) => {
       if (quizItem && quizItem.type === "quiz") {
         // Play sound if present
         await playSoundIfPresent(quizItem);
@@ -99,7 +107,7 @@ export function registerCommands(
   // Register the command to open browser
   const openBrowserCommand = vscode.commands.registerCommand(
     "lightning.openBrowser",
-    async (browserItem: any) => {
+    async (browserItem: LightningBrowser) => {
       await openBrowser(browserItem);
     }
   );
@@ -107,7 +115,7 @@ export function registerCommands(
   // Register the command to play sound
   const playSoundCommand = vscode.commands.registerCommand(
     "lightning.playSound",
-    async (item: any) => {
+    async (item: LightningItem) => {
       await playSoundIfPresent(item);
     }
   );
@@ -115,7 +123,7 @@ export function registerCommands(
   // Register the command to open files
   const openFileCommand = vscode.commands.registerCommand(
     "lightning.openFile",
-    async (item: any) => {
+    async (item: LightningFileLink) => {
       await openFile(item);
     }
   );
@@ -123,7 +131,7 @@ export function registerCommands(
   // Register the command to show dialog
   const showDialogCommand = vscode.commands.registerCommand(
     "lightning.showDialog",
-    async (item: any) => {
+    async (item: LightningDialogMessage) => {
       await showDialog(item);
     }
   );
@@ -139,7 +147,7 @@ export function registerCommands(
   // Register the command to apply diff files
   const applyDiffCommand = vscode.commands.registerCommand(
     "lightning.applyDiff",
-    async (item: any) => {
+    async (item: LightningDiff) => {
       await applyDiff(item);
     }
   );

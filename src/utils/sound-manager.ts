@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import { LightningItem } from "../lightning-types";
 
 // Global state for sound muting
 let isSoundMuted = false;
@@ -16,7 +17,7 @@ export function getSoundMuted(): boolean {
 }
 
 // Helper function to play sound if soundPath exists on an item
-export async function playSoundIfPresent(item: any) {
+export async function playSoundIfPresent(item: LightningItem) {
   if (item && item.soundPath) {
     await playSound(item.soundPath);
   }

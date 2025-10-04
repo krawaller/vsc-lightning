@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import { playSoundIfPresent } from "../utils/sound-manager";
+import { LightningDialogMessage } from "../lightning-types";
 
-export async function showDialog(item: any) {
+export async function showDialog(item: LightningDialogMessage) {
   // Play sound if present
   await playSoundIfPresent(item);
 

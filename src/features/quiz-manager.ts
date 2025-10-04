@@ -1,8 +1,14 @@
 import * as vscode from "vscode";
 import { playSound } from "../utils/sound-manager";
+import { LightningQuiz } from "../lightning-types";
+
+type QuizAnswer = {
+  text: string;
+  correct: boolean;
+};
 
 // Function to show quiz in actual modal dialogs
-export async function showQuizDialog(quizItem: any) {
+export async function showQuizDialog(quizItem: LightningQuiz) {
   // Combine and randomize answers
   const allAnswers = [
     ...quizItem.correctAnswers.map((answer: string) => ({
@@ -58,7 +64,7 @@ export async function showQuizDialog(quizItem: any) {
 }
 
 // Function to show quiz in menu format (QuickPick)
-export async function showQuizMenu(quizItem: any) {
+export async function showQuizMenu(quizItem: LightningQuiz) {
   // Combine and randomize answers
   const allAnswers = [
     ...quizItem.correctAnswers.map((answer: string) => ({
@@ -112,8 +118,8 @@ export async function showQuizMenu(quizItem: any) {
 // Function to show revealed answers with correct/incorrect indicators
 function showRevealedAnswers(
   question: string,
-  allAnswers: any[],
-  quizItem?: any
+  allAnswers: QuizAnswer[],
+  quizItem?: LightningQuiz
 ) {
   // Play reveal sound if specified
   if (quizItem && quizItem.revealSoundPath) {
@@ -135,7 +141,7 @@ function showRevealedAnswers(
 }
 
 // Function to show quiz dialog with randomized answers
-export async function showQuizWebview(quizItem: any) {
+export async function showQuizWebview(quizItem: LightningQuiz) {
   // Combine and randomize answers
   const allAnswers = [
     ...quizItem.correctAnswers.map((answer: string) => ({
@@ -190,7 +196,10 @@ export async function showQuizWebview(quizItem: any) {
 }
 
 // Function to generate the webview HTML content
-function getQuizWebviewContent(question: string, answers: any[]): string {
+function getQuizWebviewContent(
+  question: string,
+  answers: QuizAnswer[]
+): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>

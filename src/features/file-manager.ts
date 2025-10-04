@@ -3,8 +3,9 @@ import * as fs from "fs";
 import * as path from "path";
 import { playSoundIfPresent, playSound } from "../utils/sound-manager";
 import { LightningTreeItem } from "../providers/lightning-data-provider";
+import { LightningFileLink, LightningDiff } from "../lightning-types";
 
-export async function openFile(item: any) {
+export async function openFile(item: LightningFileLink) {
   // Play sound if present
   await playSoundIfPresent(item);
 
@@ -188,7 +189,7 @@ export async function closeFile(treeItem: LightningTreeItem) {
   }
 }
 
-export async function applyDiff(item: any) {
+export async function applyDiff(item: LightningDiff) {
   // Play sound if present
   await playSoundIfPresent(item);
 
