@@ -33,7 +33,7 @@
     },
     "commands": [
       {
-        "command": "lightning.openJsonFile",
+        "command": "lightning.openConfiguration",
         "title": "Open JSON File"
       },
       {

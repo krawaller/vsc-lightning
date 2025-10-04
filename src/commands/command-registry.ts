@@ -56,15 +56,6 @@ export function registerCommands(
     }
   );
 
-  // Register the same command with the legacy name for backward compatibility
-  const openJsonFileCommand = vscode.commands.registerCommand(
-    "lightning.openJsonFile",
-    async () => {
-      // Delegate to the main implementation
-      await vscode.commands.executeCommand("lightning.openConfiguration");
-    }
-  );
-
   // Register the command to mute sounds
   const toggleMuteCommand = vscode.commands.registerCommand(
     "lightning.toggleMute",
@@ -167,7 +158,6 @@ export function registerCommands(
     openConfigurationCommand,
     toggleMuteCommand,
     toggleUnmuteCommand,
-    openJsonFileCommand,
     openFileCommand,
     showDialogCommand,
     showQuizCommand,

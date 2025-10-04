@@ -166,7 +166,7 @@ export class LightningDataProvider
         // Show "Open configuration" button when no configuration is loaded
         return Promise.resolve([
           new LightningTreeItem("Open configuration", {
-            command: "lightning.openJsonFile",
+            command: "lightning.openConfiguration",
             title: "Open configuration",
             arguments: [],
           }),
