@@ -3,6 +3,20 @@ import * as fs from "fs";
 import * as path from "path";
 import { LightningConfiguration, LightningItem } from "../lightning-types";
 
+// Default configuration for each Lightning item type
+const DEFAULT_ITEM_CONFIG: Record<
+  LightningItem["type"],
+  { defaultIcon: string }
+> = {
+  title: { defaultIcon: "symbol-event" },
+  file: { defaultIcon: "file" },
+  dialog: { defaultIcon: "comment-discussion" },
+  folder: { defaultIcon: "folder" },
+  diff: { defaultIcon: "git-pull-request" },
+  quiz: { defaultIcon: "question" },
+  browser: { defaultIcon: "globe" },
+};
+
 export class LightningTreeItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
@@ -22,30 +36,9 @@ export class LightningTreeItem extends vscode.TreeItem {
     // Set appropriate icons and context values based on item type
     if (lightningItem) {
       // Use custom icon if provided, otherwise fall back to type-specific defaults
-      let iconName: string;
-
-      if (lightningItem.icon) {
-        iconName = lightningItem.icon;
-      } else {
-        // Type-specific default icons
-        if (lightningItem.type === "title") {
-          iconName = "symbol-event";
-        } else if (lightningItem.type === "file") {
-          iconName = "file";
-        } else if (lightningItem.type === "dialog") {
-          iconName = "comment-discussion";
-        } else if (lightningItem.type === "folder") {
-          iconName = "folder";
-        } else if (lightningItem.type === "diff") {
-          iconName = "git-pull-request";
-        } else if (lightningItem.type === "quiz") {
-          iconName = "question";
-        } else if (lightningItem.type === "browser") {
-          iconName = "globe";
-        } else {
-          iconName = "circle-outline"; // fallback icon
-        }
-      }
+      const iconName =
+        lightningItem.icon ||
+        DEFAULT_ITEM_CONFIG[lightningItem.type].defaultIcon;
 
       // Create icon with optional color
       if (lightningItem.iconColor) {
