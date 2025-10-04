@@ -64,22 +64,8 @@ export class LightningTreeItem extends vscode.TreeItem {
         );
       }
 
-      // Set context values for different item types
-      if (lightningItem.type === "title") {
-        this.contextValue = "titleItem";
-      } else if (lightningItem.type === "file") {
-        this.contextValue = "fileItem";
-      } else if (lightningItem.type === "dialog") {
-        this.contextValue = "dialogItem";
-      } else if (lightningItem.type === "folder") {
-        this.contextValue = "folderItem";
-      } else if (lightningItem.type === "diff") {
-        this.contextValue = "lightning-diff";
-      } else if (lightningItem.type === "quiz") {
-        this.contextValue = "lightning-quiz";
-      } else if (lightningItem.type === "browser") {
-        this.contextValue = "lightning-browser";
-      }
+      // Set context value to the item type directly
+      this.contextValue = lightningItem.type;
     }
   }
 }

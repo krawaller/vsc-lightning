@@ -117,22 +117,22 @@
       "view/item/context": [
         {
           "command": "lightning.closeFile",
-          "when": "view == lightningView && viewItem == fileItem",
+          "when": "view == lightningView && viewItem == file",
           "group": "inline"
         },
         {
           "command": "lightning.applyDiff",
-          "when": "view == lightningView && viewItem == lightning-diff",
+          "when": "view == lightningView && viewItem == diff",
           "group": "inline"
         },
         {
           "command": "lightning.revertDiff",
-          "when": "view == lightningView && viewItem == lightning-diff",
+          "when": "view == lightningView && viewItem == diff",
           "group": "inline"
         },
         {
           "command": "lightning.openBrowser",
-          "when": "view == lightningView && viewItem == lightning-browser",
+          "when": "view == lightningView && viewItem == browser",
           "group": "inline"
         }
       ]
