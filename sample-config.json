@@ -209,6 +209,55 @@
       ]
     },
     {
+      "type": "folder",
+      "label": "🎨 Theme Demo (New Feature!)",
+      "icon": "paintcan",
+      "folderLabelColor": "charts.purple",
+      "folderIconColor": "charts.purple",
+      "items": [
+        {
+          "type": "title",
+          "label": "This title inherits purple from parent folder"
+        },
+        {
+          "type": "file",
+          "label": "This file also inherits purple",
+          "path": "README.md"
+        },
+        {
+          "type": "dialog",
+          "label": "Purple inherited dialog",
+          "message": "This dialog inherits the purple theme from its parent folder!",
+          "severity": "info"
+        },
+        {
+          "type": "file",
+          "label": "But this file overrides with green",
+          "path": "package.json",
+          "iconColor": "charts.green",
+          "labelColor": "charts.green"
+        },
+        {
+          "type": "folder",
+          "label": "Nested folder with own theme",
+          "folderLabelColor": "charts.orange",
+          "folderIconColor": "charts.orange",
+          "items": [
+            {
+              "type": "title",
+              "label": "Now this inherits orange from its parent"
+            },
+            {
+              "type": "dialog",
+              "label": "Orange themed dialog",
+              "message": "This dialog is orange because its parent folder sets orange as the default!",
+              "severity": "info"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "type": "dialog",
       "label": "Note about Images",
       "message": "To test image files, add an image to your workspace and create a config entry like: {\"type\": \"file\", \"label\": \"View Logo\", \"path\": \"assets/logo.png\", \"icon\": \"file-media\", \"iconColor\": \"charts.green\", \"labelColor\": \"charts.green\"}",

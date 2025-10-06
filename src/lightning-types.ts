@@ -39,6 +39,8 @@ export type LightningDialogMessage = LightningTreeItemBase & {
 export type LightningFolder = LightningTreeItemBase & {
   type: "folder";
   items: LightningItem[];
+  folderLabelColor?: string;
+  folderIconColor?: string;
 };
 
 export type LightningQuiz = LightningTreeItemBase & {

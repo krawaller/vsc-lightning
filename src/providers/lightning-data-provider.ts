@@ -1,7 +1,11 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import { LightningConfiguration, LightningItem } from "../lightning-types";
+import {
+  LightningConfiguration,
+  LightningItem,
+  LightningFolder,
+} from "../lightning-types";
 
 // Default configuration for each Lightning item type
 const DEFAULT_ITEM_CONFIG: Record<
@@ -178,7 +182,13 @@ export class LightningDataProvider
     } else {
       // Handle folder expansion - show items of the folder
       if (element.lightningItem?.type === "folder") {
-        return Promise.resolve(this.getChildItems(element.lightningItem.items));
+        return Promise.resolve(
+          this.getChildItems(
+            element.lightningItem.items,
+            element.lightningItem.folderLabelColor,
+            element.lightningItem.folderIconColor
+          )
+        );
       }
       return Promise.resolve([]);
     }
@@ -192,7 +202,11 @@ export class LightningDataProvider
     return this.getChildItems(this.configuration.items);
   }
 
-  private getChildItems(items: LightningItem[]): LightningTreeItem[] {
+  private getChildItems(
+    items: LightningItem[],
+    parentLabelColor?: string,
+    parentIconColor?: string
+  ): LightningTreeItem[] {
     return items.map((item) => {
       let command: vscode.Command | undefined;
 
@@ -217,7 +231,28 @@ export class LightningDataProvider
       }
       // Note: folder items don't need commands as they're handled by expansion
 
-      return new LightningTreeItem(item.label, command, item);
+      // Create item with inherited colors if not explicitly set
+      const itemWithInheritedColors = {
+        ...item,
+        labelColor:
+          item.labelColor ||
+          (item.type === "folder"
+            ? (item as LightningFolder).folderLabelColor
+            : undefined) ||
+          parentLabelColor,
+        iconColor:
+          item.iconColor ||
+          (item.type === "folder"
+            ? (item as LightningFolder).folderIconColor
+            : undefined) ||
+          parentIconColor,
+      };
+
+      return new LightningTreeItem(
+        item.label,
+        command,
+        itemWithInheritedColors
+      );
     });
   }
 }
