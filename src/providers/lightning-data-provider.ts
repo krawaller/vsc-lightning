@@ -96,12 +96,8 @@ export class LightningTreeItem extends vscode.TreeItem {
         }
       }
 
-      // Set context value based on functionality, not internal type
-      this.contextValue =
-        this.collapsibleState === vscode.TreeItemCollapsibleState.Collapsed ||
-        this.collapsibleState === vscode.TreeItemCollapsibleState.Expanded
-          ? "folder"
-          : "item";
+      // Set context value to the specific item type for menu contributions
+      this.contextValue = lightningItem.type;
     }
   }
 }
