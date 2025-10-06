@@ -37,10 +37,16 @@ const DEFAULT_ITEM_CONFIG: Record<
 };
 
 export class LightningTreeItem extends vscode.TreeItem {
+  // Store the effective colors (after inheritance) for use in folder expansion
+  public readonly effectiveLabelColor?: string;
+  public readonly effectiveIconColor?: string;
+
   constructor(
     public readonly label: string,
     public readonly command?: vscode.Command,
-    public readonly lightningItem?: LightningItem
+    public readonly lightningItem?: LightningItem,
+    private readonly inheritedLabelColor?: string,
+    private readonly inheritedIconColor?: string
   ) {
     // Set collapsible state based on item type
     const collapsibleState =
@@ -59,20 +65,36 @@ export class LightningTreeItem extends vscode.TreeItem {
         lightningItem.icon ||
         DEFAULT_ITEM_CONFIG[lightningItem.type].defaultIcon;
 
+      // Determine the effective icon color: explicit > folder default > inherited > none
+      this.effectiveIconColor =
+        lightningItem.iconColor ||
+        (lightningItem.type === "folder"
+          ? (lightningItem as LightningFolder).folderIconColor
+          : undefined) ||
+        this.inheritedIconColor;
+
       // Create icon with optional color
-      if (lightningItem.iconColor) {
+      if (this.effectiveIconColor) {
         this.iconPath = new vscode.ThemeIcon(
           iconName,
-          new vscode.ThemeColor(lightningItem.iconColor)
+          new vscode.ThemeColor(this.effectiveIconColor)
         );
       } else {
         this.iconPath = new vscode.ThemeIcon(iconName);
       }
 
-      // Set custom label color if provided
-      if (lightningItem.labelColor) {
+      // Determine the effective label color: explicit > folder default > inherited > none
+      this.effectiveLabelColor =
+        lightningItem.labelColor ||
+        (lightningItem.type === "folder"
+          ? (lightningItem as LightningFolder).folderLabelColor
+          : undefined) ||
+        this.inheritedLabelColor;
+
+      // Set custom label color if determined
+      if (this.effectiveLabelColor) {
         this.resourceUri = vscode.Uri.parse(
-          `lightning://label-color/${lightningItem.labelColor}`
+          `lightning://label-color/${this.effectiveLabelColor}`
         );
       }
 
@@ -185,8 +207,8 @@ export class LightningDataProvider
         return Promise.resolve(
           this.getChildItems(
             element.lightningItem.items,
-            element.lightningItem.folderLabelColor,
-            element.lightningItem.folderIconColor
+            element.effectiveLabelColor,
+            element.effectiveIconColor
           )
         );
       }
@@ -231,27 +253,12 @@ export class LightningDataProvider
       }
       // Note: folder items don't need commands as they're handled by expansion
 
-      // Create item with inherited colors if not explicitly set
-      const itemWithInheritedColors = {
-        ...item,
-        labelColor:
-          item.labelColor ||
-          (item.type === "folder"
-            ? (item as LightningFolder).folderLabelColor
-            : undefined) ||
-          parentLabelColor,
-        iconColor:
-          item.iconColor ||
-          (item.type === "folder"
-            ? (item as LightningFolder).folderIconColor
-            : undefined) ||
-          parentIconColor,
-      };
-
       return new LightningTreeItem(
         item.label,
         command,
-        itemWithInheritedColors
+        item,
+        parentLabelColor,
+        parentIconColor
       );
     });
   }
