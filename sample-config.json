@@ -210,37 +210,34 @@
     },
     {
       "type": "folder",
-      "label": "🎨 Theme Demo (New Feature!)",
+      "label": "🎨 Icon Color Inheritance Demo",
       "icon": "paintcan",
-      "folderLabelColor": "charts.purple",
       "folderIconColor": "charts.purple",
       "items": [
         {
           "type": "title",
-          "label": "This title inherits purple from parent folder"
+          "label": "This title inherits purple icon from parent folder"
         },
         {
           "type": "file",
-          "label": "This file also inherits purple",
+          "label": "This file also inherits purple icon",
           "path": "README.md"
         },
         {
           "type": "dialog",
           "label": "Purple inherited dialog",
-          "message": "This dialog inherits the purple theme from its parent folder!",
+          "message": "This dialog inherits the purple icon color from its parent folder!",
           "severity": "info"
         },
         {
           "type": "file",
           "label": "But this file overrides with green",
           "path": "package.json",
-          "iconColor": "charts.green",
-          "labelColor": "charts.green"
+          "iconColor": "charts.green"
         },
         {
           "type": "folder",
           "label": "Nested folder with own theme",
-          "folderLabelColor": "charts.orange",
           "folderIconColor": "charts.orange",
           "items": [
             {
