@@ -40,7 +40,8 @@ export class LightningTreeItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
     public readonly command?: vscode.Command,
-    public readonly lightningItem?: LightningItem
+    public readonly lightningItem?: LightningItem,
+    private decorationProvider?: LightningDecorationProvider
   ) {
     // Set collapsible state based on item type
     const collapsibleState =
@@ -69,15 +70,38 @@ export class LightningTreeItem extends vscode.TreeItem {
         this.iconPath = new vscode.ThemeIcon(iconName);
       }
 
-      // Set custom label color if provided
-      if (lightningItem.labelColor) {
-        this.resourceUri = vscode.Uri.parse(
-          `lightning://label-color/${lightningItem.labelColor}`
-        );
+      // For file items, use the actual file path for VS Code's file icon magic
+      if (lightningItem.type === "file" && lightningItem.path) {
+        this.resourceUri = vscode.Uri.file(lightningItem.path);
       }
 
-      // Set context value to the item type directly
-      this.contextValue = lightningItem.type;
+      // Register label color with decoration provider
+      if (lightningItem.labelColor && this.decorationProvider) {
+        if (this.resourceUri) {
+          // Use the actual URI (file path) for color mapping
+          this.decorationProvider.setItemColor(
+            this.resourceUri,
+            lightningItem.labelColor
+          );
+        } else {
+          // For non-file items, create a unique URI
+          const uniqueUri = vscode.Uri.parse(
+            `lightning://item/${this.label}-${Date.now()}`
+          );
+          this.resourceUri = uniqueUri;
+          this.decorationProvider.setItemColor(
+            uniqueUri,
+            lightningItem.labelColor
+          );
+        }
+      }
+
+      // Set context value based on functionality, not internal type
+      this.contextValue =
+        this.collapsibleState === vscode.TreeItemCollapsibleState.Collapsed ||
+        this.collapsibleState === vscode.TreeItemCollapsibleState.Expanded
+          ? "folder"
+          : "item";
     }
   }
 }
@@ -85,16 +109,35 @@ export class LightningTreeItem extends vscode.TreeItem {
 export class LightningDecorationProvider
   implements vscode.FileDecorationProvider
 {
+  private colorMap = new Map<string, string>();
+
   onDidChangeFileDecorations?: vscode.Event<
     undefined | vscode.Uri | vscode.Uri[]
   >;
+
+  setItemColor(uri: vscode.Uri, color: string): void {
+    this.colorMap.set(uri.toString(), color);
+  }
+
+  clearColors(): void {
+    this.colorMap.clear();
+  }
 
   provideFileDecoration(
     uri: vscode.Uri,
     token: vscode.CancellationToken
   ): vscode.ProviderResult<vscode.FileDecoration> {
+    // Check if this URI has a color mapping
+    const color = this.colorMap.get(uri.toString());
+    if (color) {
+      return {
+        color: new vscode.ThemeColor(color),
+      };
+    }
+
+    // Legacy support for lightning:// scheme URIs
     if (uri.scheme === "lightning" && uri.authority === "label-color") {
-      const colorName = uri.path.substring(1); // Remove leading slash
+      const colorName = uri.path.substring(1).split(".")[0]; // Remove leading slash and extension
       return {
         color: new vscode.ThemeColor(colorName),
       };
@@ -116,11 +159,14 @@ export class LightningDataProvider
   private configuration: LightningConfiguration | undefined;
   private treeView: vscode.TreeView<LightningTreeItem> | undefined;
 
+  constructor(private decorationProvider: LightningDecorationProvider) {}
+
   setTreeView(treeView: vscode.TreeView<LightningTreeItem>): void {
     this.treeView = treeView;
   }
 
   refresh(): void {
+    this.decorationProvider.clearColors();
     this._onDidChangeTreeData.fire();
   }
 
@@ -169,11 +215,16 @@ export class LightningDataProvider
       if (!this.configuration) {
         // Show "Open configuration" button when no configuration is loaded
         return Promise.resolve([
-          new LightningTreeItem("Open configuration", {
-            command: "lightning.openConfiguration",
-            title: "Open configuration",
-            arguments: [],
-          }),
+          new LightningTreeItem(
+            "Open configuration",
+            {
+              command: "lightning.openConfiguration",
+              title: "Open configuration",
+              arguments: [],
+            },
+            undefined,
+            this.decorationProvider
+          ),
         ]);
       } else {
         // Show items from the configuration
@@ -234,19 +285,27 @@ export class LightningDataProvider
       // Note: folder items don't need commands as they're handled by expansion
 
       // Create a new item with inherited colors if the item doesn't have explicit colors
-      // Note: We avoid labelColor inheritance for file types due to resourceUri conflicts with icons
       const itemWithInheritedColors: LightningItem = {
         ...item,
-        iconColor: item.iconColor || parentIconColor,
+        iconColor:
+          item.iconColor ||
+          (item.type === "folder"
+            ? (item as LightningFolder).folderIconColor
+            : undefined) ||
+          parentIconColor,
         labelColor:
           item.labelColor ||
-          (item.type === "file" ? undefined : parentLabelColor),
+          (item.type === "folder"
+            ? (item as LightningFolder).folderLabelColor
+            : undefined) ||
+          parentLabelColor,
       };
 
       return new LightningTreeItem(
         item.label,
         command,
-        itemWithInheritedColors
+        itemWithInheritedColors,
+        this.decorationProvider
       );
     });
   }

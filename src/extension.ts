@@ -22,7 +22,7 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.window.registerFileDecorationProvider(decorationProvider);
 
   // Register the tree data provider
-  const treeDataProvider = new LightningDataProvider();
+  const treeDataProvider = new LightningDataProvider(decorationProvider);
   const treeView = vscode.window.createTreeView("lightningView", {
     treeDataProvider: treeDataProvider,
   });

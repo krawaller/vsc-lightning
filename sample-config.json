@@ -61,6 +61,44 @@
         },
         {
           "type": "file",
+          "label": "Test VS Code File Magic - TypeScript",
+          "path": "src/extension.ts"
+        },
+        {
+          "type": "file",
+          "label": "Test VS Code File Magic - JSON",
+          "path": "package.json"
+        },
+        {
+          "type": "file",
+          "label": "Test VS Code File Magic - Markdown",
+          "path": "README.md"
+        },
+        {
+          "type": "file",
+          "label": "Test VS Code File Magic - JavaScript",
+          "path": "esbuild.js"
+        },
+        {
+          "type": "file",
+          "label": "TypeScript file WITH label color",
+          "path": "src/extension.ts",
+          "labelColor": "charts.purple"
+        },
+        {
+          "type": "file",
+          "label": "JSON file WITH label color",
+          "path": "package.json",
+          "labelColor": "charts.green"
+        },
+        {
+          "type": "file",
+          "label": "Markdown file WITH label color",
+          "path": "README.md",
+          "labelColor": "charts.blue"
+        },
+        {
+          "type": "file",
           "label": "Highlight Lightning Types (Selection)",
           "path": "src/lightning-types.ts",
           "line": 20,
