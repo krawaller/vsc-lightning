@@ -88,16 +88,33 @@ export class LightningTreeItem extends vscode.TreeItem {
       // Register label color with decoration provider (including inherited colors)
       if (lightningItem.labelColor && this.decorationProvider) {
         if (this.resourceUri) {
-          // Use the actual URI (file path with unique fragment) for color mapping
+          // For files with label colors, ensure we have a unique fragment
+          if (lightningItem.type === "file" && lightningItem.labelColor) {
+            // Use preregistered fragment if available, otherwise generate one
+            const uniqueId =
+              (lightningItem as any)._preregisteredFragment ||
+              Math.random().toString(36).substring(2);
+            this.resourceUri = this.resourceUri.with({
+              fragment: uniqueId,
+            });
+          }
+          // Always register the color mapping immediately to prevent white flash
           this.decorationProvider.setItemColor(
             this.resourceUri,
             lightningItem.labelColor
           );
         } else {
-          // For non-file items, create a unique URI
-          const uniqueId =
-            Math.random().toString(36).substring(2) + Date.now().toString(36);
-          const uniqueUri = vscode.Uri.parse(`lightning://item/${uniqueId}`);
+          // For non-file items, use preregistered URI if available, otherwise create one
+          let uniqueUri: vscode.Uri;
+          if ((lightningItem as any)._preregisteredUri) {
+            uniqueUri = vscode.Uri.parse(
+              (lightningItem as any)._preregisteredUri
+            );
+          } else {
+            const uniqueId =
+              Math.random().toString(36).substring(2) + Date.now().toString(36);
+            uniqueUri = vscode.Uri.parse(`lightning://item/${uniqueId}`);
+          }
           this.resourceUri = uniqueUri;
           this.decorationProvider.setItemColor(
             uniqueUri,
@@ -124,19 +141,14 @@ export class LightningDecorationProvider
 
   setItemColor(uri: vscode.Uri, color: string): void {
     this.colorMap.set(uri.toString(), color);
-    // Notify that this specific URI's decoration changed
+    // Only notify that this specific URI's decoration changed
     this._onDidChangeFileDecorations.fire(uri);
   }
 
   clearColors(): void {
     this.colorMap.clear();
-    // Force a more aggressive decoration refresh by firing change events
-    // First fire undefined to clear all, then fire a dummy event to force refresh
+    // Fire single clean refresh
     this._onDidChangeFileDecorations.fire(undefined);
-    // Use setTimeout to ensure the clear happens before we fire again
-    setTimeout(() => {
-      this._onDidChangeFileDecorations.fire(undefined);
-    }, 10);
   }
 
   provideFileDecoration(
@@ -182,7 +194,8 @@ export class LightningDataProvider
   }
 
   refresh(): void {
-    this.decorationProvider.clearColors();
+    // Preregister all colors first, then clear old ones to prevent flash
+    this.preregisterAllColors();
     this._onDidChangeTreeData.fire();
   }
 
@@ -212,6 +225,9 @@ export class LightningDataProvider
         true
       );
 
+      // Preregister all colors before refreshing to prevent white flash
+      this.preregisterAllColors();
+
       this.refresh();
     } catch (error) {
       console.error("Error loading configuration file:", error);
@@ -219,6 +235,75 @@ export class LightningDataProvider
         `Failed to load configuration file: ${error}`
       );
     }
+  }
+
+  private preregisterAllColors(): void {
+    if (!this.configuration) {
+      return;
+    }
+
+    // Recursively preregister colors for all items
+    this.preregisterItemColors(this.configuration.items);
+  }
+
+  private preregisterItemColors(
+    items: LightningItem[],
+    parentLabelColor?: string,
+    parentIconColor?: string
+  ): void {
+    items.forEach((item) => {
+      // Apply inheritance logic (same as in getChildItems)
+      const effectiveLabelColor =
+        item.labelColor ||
+        (item.type === "folder"
+          ? (item as LightningFolder).folderLabelColor
+          : undefined) ||
+        parentLabelColor;
+
+      // If this item has a label color, preregister it
+      // Store the preregistered data on the item for later use
+      if (effectiveLabelColor) {
+        if (item.type === "file" && item.path) {
+          // For files, create the same URI structure as the constructor
+          const uniqueId = Math.random().toString(36).substring(2);
+          const fileUri = vscode.Uri.file(item.path).with({
+            fragment: uniqueId,
+          });
+          this.decorationProvider.setItemColor(fileUri, effectiveLabelColor);
+
+          // Store the generated fragment so the constructor can use the same one
+          (item as any)._preregisteredFragment = uniqueId;
+          (item as any)._effectiveLabelColor = effectiveLabelColor;
+        } else {
+          // For non-file items, create a unique URI
+          const uniqueId =
+            Math.random().toString(36).substring(2) + Date.now().toString(36);
+          const uniqueUri = vscode.Uri.parse(`lightning://item/${uniqueId}`);
+          this.decorationProvider.setItemColor(uniqueUri, effectiveLabelColor);
+
+          // Store the generated URI so the constructor can use the same one
+          (item as any)._preregisteredUri = uniqueUri.toString();
+          (item as any)._effectiveLabelColor = effectiveLabelColor;
+        }
+      }
+
+      // If this is a folder, recursively preregister its children
+      if (item.type === "folder") {
+        const folderItem = item as LightningFolder;
+        this.preregisterItemColors(
+          folderItem.items,
+          folderItem.folderLabelColor,
+          folderItem.folderIconColor
+        );
+      }
+    });
+  }
+
+  private createAndRegisterColorForItem(
+    item: LightningItem,
+    color: string
+  ): void {
+    // This method is no longer needed since we're doing the registration inline
   }
 
   getTreeItem(element: LightningTreeItem): vscode.TreeItem {
@@ -251,9 +336,17 @@ export class LightningDataProvider
       if (element.lightningItem?.type === "folder") {
         // Pass the folder's folderIconColor/folderLabelColor as inheritance for children
         const folderItem = element.lightningItem as LightningFolder;
+
+        // Pre-register colors for all children before creating tree items to prevent white flash
+        this.preregisterItemColors(
+          (element.lightningItem as LightningFolder).items,
+          folderItem.folderLabelColor,
+          folderItem.folderIconColor
+        );
+
         return Promise.resolve(
           this.getChildItems(
-            element.lightningItem.items,
+            (element.lightningItem as LightningFolder).items,
             folderItem.folderLabelColor,
             folderItem.folderIconColor
           )
@@ -316,6 +409,58 @@ export class LightningDataProvider
             : undefined) ||
           parentLabelColor,
       };
+
+      // Copy preregistered data to the inherited item
+      if ((item as any)._preregisteredFragment) {
+        (itemWithInheritedColors as any)._preregisteredFragment = (
+          item as any
+        )._preregisteredFragment;
+      }
+      if ((item as any)._preregisteredUri) {
+        (itemWithInheritedColors as any)._preregisteredUri = (
+          item as any
+        )._preregisteredUri;
+      }
+      if ((item as any)._effectiveLabelColor) {
+        (itemWithInheritedColors as any)._effectiveLabelColor = (
+          item as any
+        )._effectiveLabelColor;
+      }
+
+      // If this item has a label color but no preregistered data, register it immediately
+      // This happens during folder expansion when new tree items are created on-demand
+      if (
+        itemWithInheritedColors.labelColor &&
+        !(item as any)._preregisteredFragment &&
+        !(item as any)._preregisteredUri
+      ) {
+        if (
+          itemWithInheritedColors.type === "file" &&
+          itemWithInheritedColors.path
+        ) {
+          // For files, create and store a fragment
+          const uniqueId = Math.random().toString(36).substring(2);
+          const fileUri = vscode.Uri.file(itemWithInheritedColors.path).with({
+            fragment: uniqueId,
+          });
+          this.decorationProvider.setItemColor(
+            fileUri,
+            itemWithInheritedColors.labelColor
+          );
+          (itemWithInheritedColors as any)._preregisteredFragment = uniqueId;
+        } else {
+          // For non-file items, create and store a URI
+          const uniqueId =
+            Math.random().toString(36).substring(2) + Date.now().toString(36);
+          const uniqueUri = vscode.Uri.parse(`lightning://item/${uniqueId}`);
+          this.decorationProvider.setItemColor(
+            uniqueUri,
+            itemWithInheritedColors.labelColor
+          );
+          (itemWithInheritedColors as any)._preregisteredUri =
+            uniqueUri.toString();
+        }
+      }
 
       return new LightningTreeItem(
         item.label,
