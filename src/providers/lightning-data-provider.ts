@@ -85,7 +85,7 @@ export class LightningTreeItem extends vscode.TreeItem {
         }
       }
 
-      // Register label color with decoration provider
+      // Register label color with decoration provider (including inherited colors)
       if (lightningItem.labelColor && this.decorationProvider) {
         if (this.resourceUri) {
           // Use the actual URI (file path with unique fragment) for color mapping
@@ -130,9 +130,15 @@ export class LightningDecorationProvider
 
   clearColors(): void {
     this.colorMap.clear();
-    // Notify that all decorations should be re-evaluated
+    // Force a more aggressive decoration refresh by firing change events
+    // First fire undefined to clear all, then fire a dummy event to force refresh
     this._onDidChangeFileDecorations.fire(undefined);
+    // Use setTimeout to ensure the clear happens before we fire again
+    setTimeout(() => {
+      this._onDidChangeFileDecorations.fire(undefined);
+    }, 10);
   }
+
   provideFileDecoration(
     uri: vscode.Uri,
     token: vscode.CancellationToken
