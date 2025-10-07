@@ -72,22 +72,32 @@ export class LightningTreeItem extends vscode.TreeItem {
 
       // For file items, use the actual file path for VS Code's file icon magic
       if (lightningItem.type === "file" && lightningItem.path) {
-        this.resourceUri = vscode.Uri.file(lightningItem.path);
+        if (lightningItem.labelColor) {
+          // For files with label colors, add a unique fragment to make the URI unique
+          // while preserving the file path for icon magic
+          const uniqueId = Math.random().toString(36).substring(2);
+          this.resourceUri = vscode.Uri.file(lightningItem.path).with({
+            fragment: uniqueId,
+          });
+        } else {
+          // For files without label colors, use the plain file path
+          this.resourceUri = vscode.Uri.file(lightningItem.path);
+        }
       }
 
       // Register label color with decoration provider
       if (lightningItem.labelColor && this.decorationProvider) {
         if (this.resourceUri) {
-          // Use the actual URI (file path) for color mapping
+          // Use the actual URI (file path with unique fragment) for color mapping
           this.decorationProvider.setItemColor(
             this.resourceUri,
             lightningItem.labelColor
           );
         } else {
           // For non-file items, create a unique URI
-          const uniqueUri = vscode.Uri.parse(
-            `lightning://item/${this.label}-${Date.now()}`
-          );
+          const uniqueId =
+            Math.random().toString(36).substring(2) + Date.now().toString(36);
+          const uniqueUri = vscode.Uri.parse(`lightning://item/${uniqueId}`);
           this.resourceUri = uniqueUri;
           this.decorationProvider.setItemColor(
             uniqueUri,
@@ -107,18 +117,22 @@ export class LightningDecorationProvider
 {
   private colorMap = new Map<string, string>();
 
-  onDidChangeFileDecorations?: vscode.Event<
+  private _onDidChangeFileDecorations = new vscode.EventEmitter<
     undefined | vscode.Uri | vscode.Uri[]
-  >;
+  >();
+  onDidChangeFileDecorations = this._onDidChangeFileDecorations.event;
 
   setItemColor(uri: vscode.Uri, color: string): void {
     this.colorMap.set(uri.toString(), color);
+    // Notify that this specific URI's decoration changed
+    this._onDidChangeFileDecorations.fire(uri);
   }
 
   clearColors(): void {
     this.colorMap.clear();
+    // Notify that all decorations should be re-evaluated
+    this._onDidChangeFileDecorations.fire(undefined);
   }
-
   provideFileDecoration(
     uri: vscode.Uri,
     token: vscode.CancellationToken
