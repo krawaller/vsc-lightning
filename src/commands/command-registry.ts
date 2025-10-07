@@ -144,6 +144,19 @@ export function registerCommands(
     }
   );
 
+  // Register the command to zoom file (hide sidebar and terminal)
+  const zoomFileCommand = vscode.commands.registerCommand(
+    "lightning.zoomFile",
+    async () => {
+      // Hide the sidebar (explorer)
+      await vscode.commands.executeCommand("workbench.action.closeSidebar");
+      // Hide the terminal panel
+      await vscode.commands.executeCommand("workbench.action.closePanel");
+      // Optional: Also hide the status bar for even more space
+      // await vscode.commands.executeCommand("workbench.action.toggleStatusbarVisibility");
+    }
+  );
+
   // Register the command to apply diff files
   const applyDiffCommand = vscode.commands.registerCommand(
     "lightning.applyDiff",
@@ -172,6 +185,7 @@ export function registerCommands(
     openBrowserCommand,
     playSoundCommand,
     closeFileCommand,
+    zoomFileCommand,
     applyDiffCommand,
     revertDiffCommand
   );

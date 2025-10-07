@@ -50,6 +50,11 @@
         "icon": "$(close)"
       },
       {
+        "command": "lightning.zoomFile",
+        "title": "Zoom File",
+        "icon": "$(zoom-in)"
+      },
+      {
         "command": "lightning.applyDiff",
         "title": "Apply Diff",
         "icon": "$(git-pull-request)"
@@ -117,6 +122,11 @@
       "view/item/context": [
         {
           "command": "lightning.closeFile",
+          "when": "view == lightningView && viewItem == file",
+          "group": "inline"
+        },
+        {
+          "command": "lightning.zoomFile",
           "when": "view == lightningView && viewItem == file",
           "group": "inline"
         },
