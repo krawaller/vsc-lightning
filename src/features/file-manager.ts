@@ -235,45 +235,51 @@ export async function applyDiff(item: LightningDiff) {
     let selectedAction = action;
 
     if (!selectedAction) {
-      // Show confirmation dialog only if no action is specified
-      const dialogResult = await vscode.window.showWarningMessage(
-        `Apply diff from "${path.basename(
-          diffPath
-        )}"? This will modify your working directory.`,
-        { modal: true },
-        "Apply Diff",
-        "Preview Only"
-      );
-
-      // Map dialog result to action
-      if (dialogResult === "Apply Diff") {
-        selectedAction = "apply";
-      } else if (dialogResult === "Preview Only") {
-        selectedAction = "preview";
-      } else {
-        // User cancelled
-        return;
-      }
+      // For toggle behavior, always try to apply first
+      selectedAction = "apply";
     }
 
     if (selectedAction === "apply") {
-      // Execute git apply command
+      // Execute git apply command with toggle behavior
       const { exec } = require("child_process");
       const workingDir = workspaceFolder.uri.fsPath;
 
+      // First try to apply the diff
       exec(
         `git apply "${resolvedPath}"`,
         { cwd: workingDir },
         (error: any, stdout: string, stderr: string) => {
           if (error) {
-            vscode.window.showErrorMessage(
-              `Failed to apply diff: ${error.message}\n${stderr}`
+            // Apply failed, try to revert instead
+            exec(
+              `git apply --reverse "${resolvedPath}"`,
+              { cwd: workingDir },
+              (
+                revertError: any,
+                revertStdout: string,
+                revertStderr: string
+              ) => {
+                if (revertError) {
+                  // Both apply and revert failed, show error
+                  vscode.window.showErrorMessage(
+                    `Failed to apply diff: ${error.message}\nFailed to revert diff: ${revertError.message}`
+                  );
+                } else {
+                  // Revert succeeded
+                  if (item.revertSoundPath) {
+                    playSound(item.revertSoundPath);
+                  }
+                  vscode.window.showInformationMessage(
+                    `Reverted diff: ${path.basename(diffPath)}`
+                  );
+                }
+              }
             );
           } else {
+            // Apply succeeded
             vscode.window.showInformationMessage(
-              `Successfully applied diff: ${path.basename(diffPath)}`
+              `Applied diff: ${path.basename(diffPath)}`
             );
-            // Note: Removed file explorer refresh to avoid switching to Explorer tab
           }
         }
       );
