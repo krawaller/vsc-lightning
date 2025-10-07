@@ -121,14 +121,14 @@
       ],
       "view/item/context": [
         {
-          "command": "lightning.closeFile",
-          "when": "view == lightningView && viewItem == file",
-          "group": "inline"
-        },
-        {
           "command": "lightning.zoomFile",
           "when": "view == lightningView && viewItem == file",
-          "group": "inline"
+          "group": "inline@1"
+        },
+        {
+          "command": "lightning.closeFile",
+          "when": "view == lightningView && viewItem == file",
+          "group": "inline@2"
         },
         {
           "command": "lightning.applyDiff",

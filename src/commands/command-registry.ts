@@ -147,8 +147,13 @@ export function registerCommands(
   // Register the command to zoom file (hide sidebar and terminal)
   const zoomFileCommand = vscode.commands.registerCommand(
     "lightning.zoomFile",
-    async () => {
-      // Hide the sidebar (explorer)
+    async (treeItem: LightningTreeItem) => {
+      // First, open the file if it's a file item
+      if (treeItem.lightningItem?.type === "file") {
+        await openFile(treeItem.lightningItem as LightningFileLink);
+      }
+
+      // Then hide the sidebar (explorer)
       await vscode.commands.executeCommand("workbench.action.closeSidebar");
       // Hide the terminal panel
       await vscode.commands.executeCommand("workbench.action.closePanel");
