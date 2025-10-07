@@ -131,11 +131,6 @@
           "group": "inline@2"
         },
         {
-          "command": "lightning.applyDiff",
-          "when": "view == lightningView && viewItem == diff",
-          "group": "inline"
-        },
-        {
           "command": "lightning.revertDiff",
           "when": "view == lightningView && viewItem == diff",
           "group": "inline"
