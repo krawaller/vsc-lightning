@@ -144,21 +144,17 @@ export function registerCommands(
     }
   );
 
-  // Register the command to zoom file (hide sidebar and terminal)
+  // Register the command to zoom file (close other tabs and focus on target file)
   const zoomFileCommand = vscode.commands.registerCommand(
     "lightning.zoomFile",
     async (treeItem: LightningTreeItem) => {
-      // First, open the file if it's a file item
+      // First, close all open tabs
+      await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+
+      // Then, open the file if it's a file item
       if (treeItem.lightningItem?.type === "file") {
         await openFile(treeItem.lightningItem as LightningFileLink);
       }
-
-      // Then hide the sidebar (explorer)
-      await vscode.commands.executeCommand("workbench.action.closeSidebar");
-      // Hide the terminal panel
-      await vscode.commands.executeCommand("workbench.action.closePanel");
-      // Optional: Also hide the status bar for even more space
-      // await vscode.commands.executeCommand("workbench.action.toggleStatusbarVisibility");
     }
   );
 
