@@ -1,71 +1,60 @@
-# lightning README
+# Lightning
 
-This is the README for your extension "lightning". After writing up a brief description, we recommend including the following sections.
+Lightning is a VS Code extension for running presentation flows inside the editor. It adds a Lightning activity-bar view that can load a JSON presentation config and turn it into clickable items for opening files, jumping to lines, highlighting code, showing dialogs, opening browser links, running quizzes, and applying diffs.
 
-## Features
+## Try it locally
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+1. Install dependencies:
 
-For example if there is an image subfolder under your extension project workspace:
+   ```sh
+   npm install
+   ```
 
-\!\[feature X\]\(images/feature-x.png\)
+2. Build the extension:
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+   ```sh
+   npm run compile
+   ```
 
-## Requirements
+3. Press `F5` in VS Code and choose `Run Extension` if prompted. This opens a new Extension Development Host window with Lightning loaded and the `lightning-dev.code-workspace` workspace open.
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+4. Click the Lightning icon in the activity bar.
 
-## Extension Settings
+5. Click the `Open Configuration` action in the Lightning view title bar and select `sample-config.json` from the workspace root.
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+6. Click through the items in the Lightning view:
+   - File items open files and can jump to or highlight specific lines.
+   - Dialog items show VS Code information, warning, or error messages.
+   - Browser items open a webview or the external browser.
+   - Quiz items show quiz prompts.
+   - Folder items group presentation sections.
 
-For example:
+After changing extension code, either restart the debug session or run the `watch` task and reload the Extension Development Host window.
 
-This extension contributes the following settings:
+## Useful commands
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+```sh
+npm run compile      # typecheck, lint, and bundle to dist/
+npm run watch        # watch TypeScript and esbuild output
+npm run lint         # run ESLint over src/
+npm run check-types  # run TypeScript without emitting files
+npm test             # run the VS Code test runner
+```
 
-## Known Issues
+## Presentation config
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+Use `sample-config.json` as the reference config. A config has a title and an `items` array. Supported item types are defined in `src/lightning-types.ts`:
 
-## Release Notes
+- `title`
+- `file`
+- `folder`
+- `dialog`
+- `browser`
+- `quiz`
+- `diff`
 
-Users appreciate release notes as you update your extension.
+Relative file paths are resolved from the workspace root opened in the Extension Development Host window.
 
-### 1.0.0
+## Notes
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+The current automated test suite is still the scaffolded sample test. Manual testing through `Run Extension` and `sample-config.json` is the best way to exercise the presentation workflow right now.
