@@ -21,7 +21,7 @@ export async function openBrowser(browserItem: LightningBrowser) {
       vscode.window.showErrorMessage(
         `Failed to open browser: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
   }
