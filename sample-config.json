@@ -303,8 +303,8 @@
     },
     {
       "type": "diff",
-      "label": "Apply Sample Patch",
-      "diffPath": "sample.patch",
+      "label": "Toggle Demo Patch",
+      "diffPath": "patches/toggle-demo.patch",
       "icon": "git-pull-request",
       "iconColor": "charts.purple",
       "labelColor": "charts.purple",
@@ -313,8 +313,8 @@
     },
     {
       "type": "diff",
-      "label": "Preview Another Patch",
-      "diffPath": "preview.patch",
+      "label": "Preview Demo Patch",
+      "diffPath": "patches/preview-demo.patch",
       "action": "preview",
       "icon": "eye",
       "iconColor": "charts.blue",
@@ -322,8 +322,8 @@
     },
     {
       "type": "diff",
-      "label": "Auto-Apply Hotfix",
-      "diffPath": "hotfix.patch",
+      "label": "Auto-Apply Demo Hotfix",
+      "diffPath": "patches/hotfix-demo.patch",
       "action": "apply",
       "icon": "rocket",
       "iconColor": "charts.orange",

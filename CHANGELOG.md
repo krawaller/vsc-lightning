@@ -7,3 +7,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 
 - Initial release
+
+## Diff Demo Target
+
+Toggle status: baseline
+Preview note: this line is unchanged until a patch is applied manually.
+Hotfix status: pending

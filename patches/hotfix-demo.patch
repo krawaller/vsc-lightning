@@ -1,0 +1,11 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -10,6 +10,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+ 
+ ## Diff Demo Target
+ 
+ Toggle status: baseline
+ Preview note: this line is unchanged until a patch is applied manually.
+-Hotfix status: pending
++Hotfix status: applied
