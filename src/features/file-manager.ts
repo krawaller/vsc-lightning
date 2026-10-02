@@ -34,13 +34,14 @@ class GitSnapshotContentProvider implements vscode.TextDocumentContentProvider {
       throw new Error("Missing Lightning git snapshot parameters");
     }
 
-    const { stdout } = await execFileAsync("git", [
-      "show",
-      `${gitRef}:${filePath}`,
-    ], {
-      cwd: workspaceRoot,
-      maxBuffer: 20 * 1024 * 1024,
-    });
+    const { stdout } = await execFileAsync(
+      "git",
+      ["show", `${gitRef}:${filePath}`],
+      {
+        cwd: workspaceRoot,
+        maxBuffer: 20 * 1024 * 1024,
+      },
+    );
 
     return stdout;
   }
