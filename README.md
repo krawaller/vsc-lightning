@@ -55,6 +55,8 @@ Use `sample-config.json` as the reference config. A config has a title and an `i
 
 Relative file paths are resolved from the workspace root opened in the Extension Development Host window.
 
+Use the optional top-level `fileMenus` array to define Lightning editor-toolbar actions by file path. When a configured file is active, the `Lightning` editor button can apply or revert configured diffs, open configured git refs, or return to the worktree file no matter how the file was opened. Existing `diffButtons` and `refButtons` on `file` items are still supported.
+
 ## Notes
 
 The current automated test suite is still the scaffolded sample test. Manual testing through `Run Extension` and `sample-config.json` is the best way to exercise the presentation workflow right now.

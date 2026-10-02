@@ -33,7 +33,11 @@ export function registerCommands(
   context: vscode.ExtensionContext,
   treeDataProvider: LightningDataProvider,
 ): void {
-  initializeEditorDiffButtons(context);
+  initializeEditorDiffButtons(
+    context,
+    () => treeDataProvider.getConfiguration(),
+    treeDataProvider.onDidChangeTreeData,
+  );
 
   // Register the command to reset config
   const resetConfigCommand = vscode.commands.registerCommand(

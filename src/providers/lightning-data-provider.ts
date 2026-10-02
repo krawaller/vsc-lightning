@@ -41,7 +41,7 @@ export class LightningTreeItem extends vscode.TreeItem {
     public readonly label: string,
     public readonly command?: vscode.Command,
     public readonly lightningItem?: LightningItem,
-    private decorationProvider?: LightningDecorationProvider
+    private decorationProvider?: LightningDecorationProvider,
   ) {
     // Set collapsible state based on item type
     const collapsibleState =
@@ -64,7 +64,7 @@ export class LightningTreeItem extends vscode.TreeItem {
       if (lightningItem.iconColor) {
         this.iconPath = new vscode.ThemeIcon(
           iconName,
-          new vscode.ThemeColor(lightningItem.iconColor)
+          new vscode.ThemeColor(lightningItem.iconColor),
         );
       } else {
         this.iconPath = new vscode.ThemeIcon(iconName);
@@ -101,14 +101,14 @@ export class LightningTreeItem extends vscode.TreeItem {
           // Always register the color mapping immediately to prevent white flash
           this.decorationProvider.setItemColor(
             this.resourceUri,
-            lightningItem.labelColor
+            lightningItem.labelColor,
           );
         } else {
           // For non-file items, use preregistered URI if available, otherwise create one
           let uniqueUri: vscode.Uri;
           if ((lightningItem as any)._preregisteredUri) {
             uniqueUri = vscode.Uri.parse(
-              (lightningItem as any)._preregisteredUri
+              (lightningItem as any)._preregisteredUri,
             );
           } else {
             const uniqueId =
@@ -118,7 +118,7 @@ export class LightningTreeItem extends vscode.TreeItem {
           this.resourceUri = uniqueUri;
           this.decorationProvider.setItemColor(
             uniqueUri,
-            lightningItem.labelColor
+            lightningItem.labelColor,
           );
         }
       }
@@ -153,7 +153,7 @@ export class LightningDecorationProvider
 
   provideFileDecoration(
     uri: vscode.Uri,
-    token: vscode.CancellationToken
+    token: vscode.CancellationToken,
   ): vscode.ProviderResult<vscode.FileDecoration> {
     // Check if this URI has a color mapping
     const color = this.colorMap.get(uri.toString());
@@ -174,9 +174,7 @@ export class LightningDecorationProvider
   }
 }
 
-export class LightningDataProvider
-  implements vscode.TreeDataProvider<LightningTreeItem>
-{
+export class LightningDataProvider implements vscode.TreeDataProvider<LightningTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<
     LightningTreeItem | undefined | null | void
   > = new vscode.EventEmitter<LightningTreeItem | undefined | null | void>();
@@ -204,13 +202,17 @@ export class LightningDataProvider
     vscode.commands.executeCommand(
       "setContext",
       "lightning.configLoaded",
-      false
+      false,
     );
     this.refresh();
   }
 
   hasConfiguration(): boolean {
     return this.configuration !== undefined;
+  }
+
+  getConfiguration(): LightningConfiguration | undefined {
+    return this.configuration;
   }
 
   async setConfigurationFile(filePath: string): Promise<void> {
@@ -222,7 +224,7 @@ export class LightningDataProvider
       vscode.commands.executeCommand(
         "setContext",
         "lightning.configLoaded",
-        true
+        true,
       );
 
       // Preregister all colors before refreshing to prevent white flash
@@ -232,7 +234,7 @@ export class LightningDataProvider
     } catch (error) {
       console.error("Error loading configuration file:", error);
       vscode.window.showErrorMessage(
-        `Failed to load configuration file: ${error}`
+        `Failed to load configuration file: ${error}`,
       );
     }
   }
@@ -249,7 +251,7 @@ export class LightningDataProvider
   private preregisterItemColors(
     items: LightningItem[],
     parentLabelColor?: string,
-    parentIconColor?: string
+    parentIconColor?: string,
   ): void {
     items.forEach((item) => {
       // Apply inheritance logic (same as in getChildItems)
@@ -293,7 +295,7 @@ export class LightningDataProvider
         this.preregisterItemColors(
           folderItem.items,
           folderItem.folderLabelColor,
-          folderItem.folderIconColor
+          folderItem.folderIconColor,
         );
       }
     });
@@ -301,7 +303,7 @@ export class LightningDataProvider
 
   private createAndRegisterColorForItem(
     item: LightningItem,
-    color: string
+    color: string,
   ): void {
     // This method is no longer needed since we're doing the registration inline
   }
@@ -324,7 +326,7 @@ export class LightningDataProvider
               arguments: [],
             },
             undefined,
-            this.decorationProvider
+            this.decorationProvider,
           ),
         ]);
       } else {
@@ -341,15 +343,15 @@ export class LightningDataProvider
         this.preregisterItemColors(
           (element.lightningItem as LightningFolder).items,
           folderItem.folderLabelColor,
-          folderItem.folderIconColor
+          folderItem.folderIconColor,
         );
 
         return Promise.resolve(
           this.getChildItems(
             (element.lightningItem as LightningFolder).items,
             folderItem.folderLabelColor,
-            folderItem.folderIconColor
-          )
+            folderItem.folderIconColor,
+          ),
         );
       }
       return Promise.resolve([]);
@@ -367,7 +369,7 @@ export class LightningDataProvider
   private getChildItems(
     items: LightningItem[],
     parentLabelColor?: string,
-    parentIconColor?: string
+    parentIconColor?: string,
   ): LightningTreeItem[] {
     return items.map((item) => {
       let command: vscode.Command | undefined;
@@ -445,7 +447,7 @@ export class LightningDataProvider
           });
           this.decorationProvider.setItemColor(
             fileUri,
-            itemWithInheritedColors.labelColor
+            itemWithInheritedColors.labelColor,
           );
           (itemWithInheritedColors as any)._preregisteredFragment = uniqueId;
         } else {
@@ -455,7 +457,7 @@ export class LightningDataProvider
           const uniqueUri = vscode.Uri.parse(`lightning://item/${uniqueId}`);
           this.decorationProvider.setItemColor(
             uniqueUri,
-            itemWithInheritedColors.labelColor
+            itemWithInheritedColors.labelColor,
           );
           (itemWithInheritedColors as any)._preregisteredUri =
             uniqueUri.toString();
@@ -466,7 +468,7 @@ export class LightningDataProvider
         item.label,
         command,
         itemWithInheritedColors,
-        this.decorationProvider
+        this.decorationProvider,
       );
     });
   }

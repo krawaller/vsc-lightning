@@ -1,5 +1,31 @@
 {
   "title": "Lightning Dashboard - Complete Sample",
+  "fileMenus": [
+    {
+      "path": "CHANGELOG.md",
+      "diffButtons": [
+        {
+          "label": "Toggle Demo Patch",
+          "diffPath": "patches/toggle-demo.patch",
+          "icon": "git-pull-request",
+          "revertSoundPath": "revert-success.wav"
+        },
+        {
+          "label": "Auto-Apply Demo Hotfix",
+          "diffPath": "patches/hotfix-demo.patch",
+          "icon": "rocket"
+        }
+      ],
+      "refButtons": [
+        {
+          "label": "Before Diff Demo Target",
+          "gitRef": "0901a02f29ba26d60b55e9047515cb3e1cb1ea71",
+          "tabSuffix": "before diff demo target",
+          "icon": "git-commit"
+        }
+      ]
+    }
+  ],
   "items": [
     {
       "type": "title",
@@ -61,39 +87,18 @@
         },
         {
           "type": "file",
-          "label": "Open Changelog with Diff Buttons",
+          "label": "Open Changelog",
           "path": "CHANGELOG.md",
           "icon": "history",
           "iconColor": "charts.purple",
-          "labelColor": "charts.purple",
-          "diffButtons": [
-            {
-              "label": "Toggle Demo Patch",
-              "diffPath": "patches/toggle-demo.patch",
-              "icon": "git-pull-request",
-              "revertSoundPath": "revert-success.wav"
-            },
-            {
-              "label": "Auto-Apply Demo Hotfix",
-              "diffPath": "patches/hotfix-demo.patch",
-              "icon": "rocket"
-            }
-          ],
-          "refButtons": [
-            {
-              "label": "Before Diff Sample",
-              "gitRef": "HEAD~1",
-              "tabSuffix": "before diff sample",
-              "icon": "git-commit"
-            }
-          ]
+          "labelColor": "charts.purple"
         },
         {
           "type": "file",
-          "label": "Open Changelog at HEAD~1",
+          "label": "Open Changelog Before Diff Demo Target",
           "path": "CHANGELOG.md",
-          "gitRef": "HEAD~1",
-          "tabSuffix": "before diff sample",
+          "gitRef": "0901a02f29ba26d60b55e9047515cb3e1cb1ea71",
+          "tabSuffix": "before diff demo target",
           "icon": "git-commit",
           "iconColor": "charts.blue",
           "labelColor": "charts.blue"

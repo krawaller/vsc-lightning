@@ -31,6 +31,12 @@ export type LightningFileRefButton = {
   icon?: string;
 };
 
+export type LightningFileMenu = {
+  path: string;
+  diffButtons?: LightningFileDiffButton[];
+  refButtons?: LightningFileRefButton[];
+};
+
 export type LightningFileLink = LightningTreeItemBase & {
   type: "file";
   path: string;
@@ -88,5 +94,6 @@ export type LightningItem =
 
 export type LightningConfiguration = {
   title: string;
+  fileMenus?: LightningFileMenu[];
   items: LightningItem[];
 };

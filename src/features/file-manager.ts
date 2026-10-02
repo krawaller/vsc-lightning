@@ -6,10 +6,13 @@ import { promisify } from "util";
 import { playSoundIfPresent, playSound } from "../utils/sound-manager";
 import { LightningTreeItem } from "../providers/lightning-data-provider";
 import {
+  LightningConfiguration,
   LightningDiff,
   LightningFileDiffButton,
   LightningFileLink,
+  LightningFileMenu,
   LightningFileRefButton,
+  LightningItem,
 } from "../lightning-types";
 
 type EditorButtonConfig = {
@@ -26,8 +29,10 @@ type EditorLightningTarget =
   | { type: "applyDiff"; diffButton: LightningFileDiffButton }
   | EditorRefTarget;
 
-const editorButtonConfigsByKey = new Map<string, EditorButtonConfig>();
 const execFileAsync = promisify(execFile);
+let getLightningConfiguration:
+  | (() => LightningConfiguration | undefined)
+  | undefined;
 
 const gitSnapshotScheme = "lightning-git";
 
@@ -57,7 +62,10 @@ class GitSnapshotContentProvider implements vscode.TextDocumentContentProvider {
 
 export function initializeEditorDiffButtons(
   context: vscode.ExtensionContext,
+  getConfiguration?: () => LightningConfiguration | undefined,
+  onConfigurationChanged?: vscode.Event<unknown>,
 ): void {
+  getLightningConfiguration = getConfiguration;
   context.subscriptions.push(
     vscode.workspace.registerTextDocumentContentProvider(
       gitSnapshotScheme,
@@ -67,6 +75,13 @@ export function initializeEditorDiffButtons(
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(updateEditorDiffButtonContext),
   );
+  if (onConfigurationChanged) {
+    context.subscriptions.push(
+      onConfigurationChanged(() =>
+        updateEditorDiffButtonContext(vscode.window.activeTextEditor),
+      ),
+    );
+  }
   updateEditorDiffButtonContext(vscode.window.activeTextEditor);
 }
 
@@ -94,22 +109,9 @@ export async function openFile(item: LightningFileLink) {
 
     if (item.gitRef) {
       const editor = await openGitSnapshotFile(item, resolvedPath);
-      setEditorButtons(
-        getEditorButtonKey(editor.document.uri),
-        resolvedPath,
-        item.diffButtons,
-        item.refButtons,
-      );
       applyFilePresentationOptions(editor, item);
       return;
     }
-
-    setEditorButtons(
-      getEditorButtonKey(uri),
-      resolvedPath,
-      item.diffButtons,
-      item.refButtons,
-    );
 
     // Check if this is an image or binary file
     const extension = path.extname(resolvedPath).toLowerCase();
@@ -307,9 +309,15 @@ async function openEditorRefTarget(
   refTarget: EditorRefTarget,
   activeConfig: EditorButtonConfig,
 ): Promise<void> {
-  await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-
   if (refTarget.type === "worktree") {
+    const didDiscardChanges = await discardWorktreeFileChanges(
+      activeConfig.sourceFilePath,
+    );
+    if (!didDiscardChanges) {
+      return;
+    }
+
+    await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
     await openFile({
       type: "file",
       label: path.basename(activeConfig.sourceFilePath),
@@ -319,6 +327,8 @@ async function openEditorRefTarget(
     });
     return;
   }
+
+  await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 
   await openFile({
     type: "file",
@@ -330,6 +340,43 @@ async function openEditorRefTarget(
     diffButtons: activeConfig.diffButtons,
     refButtons: activeConfig.refButtons,
   });
+}
+
+async function discardWorktreeFileChanges(
+  sourceFilePath: string,
+): Promise<boolean> {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    vscode.window.showErrorMessage(
+      "No workspace folder found for git operations",
+    );
+    return false;
+  }
+
+  const workspaceRoot = workspaceFolder.uri.fsPath;
+  const relativePath = path.relative(workspaceRoot, sourceFilePath);
+
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    vscode.window.showErrorMessage(
+      "Cannot discard changes for a file outside the workspace",
+    );
+    return false;
+  }
+
+  const gitPath = relativePath.split(path.sep).join(path.posix.sep);
+  try {
+    await execFileAsync(
+      "git",
+      ["restore", "--staged", "--worktree", "--", gitPath],
+      { cwd: workspaceRoot },
+    );
+    return true;
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `Failed to discard changes: ${path.basename(sourceFilePath)}`,
+    );
+    return false;
+  }
 }
 
 export async function closeFile(treeItem: LightningTreeItem) {
@@ -581,44 +628,12 @@ export async function revertDiffItem(item: LightningDiff) {
   }
 }
 
-function setEditorButtons(
-  editorKey: string,
-  sourceFilePath: string,
-  diffButtons: LightningFileDiffButton[] | undefined,
-  refButtons: LightningFileRefButton[] | undefined,
-): void {
-  if (
-    (diffButtons && diffButtons.length > 0) ||
-    (refButtons && refButtons.length > 0)
-  ) {
-    editorButtonConfigsByKey.set(editorKey, {
-      sourceFilePath,
-      diffButtons,
-      refButtons,
-    });
-  } else {
-    editorButtonConfigsByKey.delete(editorKey);
-  }
-
-  updateEditorDiffButtonContext(vscode.window.activeTextEditor);
-}
-
 function updateEditorDiffButtonContext(
   editor: vscode.TextEditor | undefined,
 ): void {
   const activeConfig = getEditorButtonConfig(editor);
   const diffButtonsVisible = Boolean(activeConfig?.diffButtons?.length);
   const refButtonsVisible = Boolean(activeConfig?.refButtons?.length);
-  vscode.commands.executeCommand(
-    "setContext",
-    "lightning.editorDiffButtonsVisible",
-    diffButtonsVisible,
-  );
-  vscode.commands.executeCommand(
-    "setContext",
-    "lightning.editorRefButtonsVisible",
-    refButtonsVisible,
-  );
   vscode.commands.executeCommand(
     "setContext",
     "lightning.editorLightningButtonsVisible",
@@ -633,13 +648,128 @@ function getActiveEditorButtonConfig(): EditorButtonConfig | undefined {
 function getEditorButtonConfig(
   editor: vscode.TextEditor | undefined,
 ): EditorButtonConfig | undefined {
-  return editor
-    ? editorButtonConfigsByKey.get(getEditorButtonKey(editor.document.uri))
-    : undefined;
+  if (!editor) {
+    return undefined;
+  }
+
+  const sourceFilePath = getSourceFilePath(editor.document.uri);
+  if (!sourceFilePath) {
+    return undefined;
+  }
+
+  return getConfiguredEditorButtonConfig(sourceFilePath);
 }
 
-function getEditorButtonKey(uri: vscode.Uri): string {
-  return uri.scheme === "file" ? uri.fsPath : uri.toString();
+function getSourceFilePath(uri: vscode.Uri): string | undefined {
+  if (uri.scheme === "file") {
+    return uri.fsPath;
+  }
+
+  if (uri.scheme === gitSnapshotScheme) {
+    const query = new URLSearchParams(uri.query);
+    const workspaceRoot = query.get("workspaceRoot");
+    const filePath = query.get("filePath");
+    return workspaceRoot && filePath
+      ? path.resolve(workspaceRoot, filePath)
+      : undefined;
+  }
+
+  return undefined;
+}
+
+function getConfiguredEditorButtonConfig(
+  sourceFilePath: string,
+): EditorButtonConfig | undefined {
+  const configuration = getLightningConfiguration?.();
+  if (!configuration) {
+    return undefined;
+  }
+
+  const normalizedSourcePath = path.normalize(sourceFilePath);
+  const diffButtons: LightningFileDiffButton[] = [];
+  const refButtons: LightningFileRefButton[] = [];
+
+  collectEditorButtonsFromMenus(
+    configuration.fileMenus || [],
+    normalizedSourcePath,
+    diffButtons,
+    refButtons,
+  );
+  collectEditorButtonsForPath(
+    configuration.items,
+    normalizedSourcePath,
+    diffButtons,
+    refButtons,
+  );
+
+  if (diffButtons.length === 0 && refButtons.length === 0) {
+    return undefined;
+  }
+
+  return {
+    sourceFilePath: normalizedSourcePath,
+    diffButtons: diffButtons.length > 0 ? diffButtons : undefined,
+    refButtons: refButtons.length > 0 ? refButtons : undefined,
+  };
+}
+
+function collectEditorButtonsFromMenus(
+  fileMenus: LightningFileMenu[],
+  sourceFilePath: string,
+  diffButtons: LightningFileDiffButton[],
+  refButtons: LightningFileRefButton[],
+): void {
+  for (const fileMenu of fileMenus) {
+    const menuPath = resolveWorkspacePath(fileMenu.path);
+    if (!menuPath || path.normalize(menuPath) !== sourceFilePath) {
+      continue;
+    }
+
+    diffButtons.push(...(fileMenu.diffButtons || []));
+    refButtons.push(...(fileMenu.refButtons || []));
+  }
+}
+
+function collectEditorButtonsForPath(
+  items: LightningItem[],
+  sourceFilePath: string,
+  diffButtons: LightningFileDiffButton[],
+  refButtons: LightningFileRefButton[],
+): void {
+  for (const item of items) {
+    if (item.type === "folder") {
+      collectEditorButtonsForPath(
+        item.items,
+        sourceFilePath,
+        diffButtons,
+        refButtons,
+      );
+      continue;
+    }
+
+    if (item.type !== "file") {
+      continue;
+    }
+
+    const itemPath = resolveWorkspacePath(item.path);
+    if (!itemPath || path.normalize(itemPath) !== sourceFilePath) {
+      continue;
+    }
+
+    diffButtons.push(...(item.diffButtons || []));
+    refButtons.push(...(item.refButtons || []));
+  }
+}
+
+function resolveWorkspacePath(filePath: string): string | undefined {
+  if (path.isAbsolute(filePath)) {
+    return filePath;
+  }
+
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  return workspaceFolder
+    ? path.resolve(workspaceFolder.uri.fsPath, filePath)
+    : undefined;
 }
 
 async function pickActiveEditorLightningTarget(
@@ -663,8 +793,8 @@ async function pickActiveEditorLightningTarget(
       ...(refButtons.length > 0
         ? [
             {
-              label: "$(file) Open worktree file",
-              description: "Current working tree",
+              label: "$(discard) Discard changes and open worktree file",
+              description: "Reset file to HEAD",
               target: { type: "worktree" } as EditorLightningTarget,
             },
           ]
