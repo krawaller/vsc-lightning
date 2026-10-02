@@ -24,12 +24,22 @@ export type LightningFileDiffButton = {
   revertSoundPath?: string;
 };
 
+export type LightningFileRefButton = {
+  label: string;
+  gitRef: string;
+  tabSuffix?: string;
+  icon?: string;
+};
+
 export type LightningFileLink = LightningTreeItemBase & {
   type: "file";
   path: string;
+  gitRef?: string;
+  tabSuffix?: string;
   line?: number;
   closeSoundPath?: string;
   diffButtons?: LightningFileDiffButton[];
+  refButtons?: LightningFileRefButton[];
   // Highlight properties for presentation purposes
   highlightStartLine?: number;
   highlightEndLine?: number;

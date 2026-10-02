@@ -78,7 +78,25 @@
               "diffPath": "patches/hotfix-demo.patch",
               "icon": "rocket"
             }
+          ],
+          "refButtons": [
+            {
+              "label": "Before Diff Sample",
+              "gitRef": "HEAD~1",
+              "tabSuffix": "before diff sample",
+              "icon": "git-commit"
+            }
           ]
+        },
+        {
+          "type": "file",
+          "label": "Open Changelog at HEAD~1",
+          "path": "CHANGELOG.md",
+          "gitRef": "HEAD~1",
+          "tabSuffix": "before diff sample",
+          "icon": "git-commit",
+          "iconColor": "charts.blue",
+          "labelColor": "charts.blue"
         },
         {
           "type": "file",

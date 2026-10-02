@@ -75,6 +75,11 @@
         "icon": "$(discard)"
       },
       {
+        "command": "lightning.openEditorRefButton",
+        "title": "Open Lightning Ref",
+        "icon": "$(git-commit)"
+      },
+      {
         "command": "lightning.resetConfig",
         "title": "Reset Config",
         "icon": "$(refresh)"
@@ -154,13 +159,18 @@
       "editor/title": [
         {
           "command": "lightning.applyEditorDiffButton",
-          "when": "lightning.editorDiffButtonsVisible && resourceScheme == file",
+          "when": "lightning.editorDiffButtonsVisible",
           "group": "navigation@1"
         },
         {
           "command": "lightning.revertEditorDiffButton",
-          "when": "lightning.editorDiffButtonsVisible && resourceScheme == file",
+          "when": "lightning.editorDiffButtonsVisible",
           "group": "navigation@2"
+        },
+        {
+          "command": "lightning.openEditorRefButton",
+          "when": "lightning.editorRefButtonsVisible",
+          "group": "navigation@3"
         }
       ]
     }

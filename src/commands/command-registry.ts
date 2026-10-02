@@ -26,6 +26,7 @@ import {
   revertDiff,
   applyActiveEditorDiffButton,
   initializeEditorDiffButtons,
+  openActiveEditorRefButton,
   revertActiveEditorDiffButton,
 } from "../features/file-manager";
 import { showDialog } from "../features/dialog-manager";
@@ -193,6 +194,13 @@ export function registerCommands(
     },
   );
 
+  const openEditorRefButtonCommand = vscode.commands.registerCommand(
+    "lightning.openEditorRefButton",
+    async () => {
+      await openActiveEditorRefButton();
+    },
+  );
+
   // Add all commands to the context subscriptions
   context.subscriptions.push(
     resetConfigCommand,
@@ -210,5 +218,6 @@ export function registerCommands(
     revertDiffCommand,
     applyEditorDiffButtonCommand,
     revertEditorDiffButtonCommand,
+    openEditorRefButtonCommand,
   );
 }

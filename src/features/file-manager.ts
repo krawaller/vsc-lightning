@@ -1,22 +1,60 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import { playSoundIfPresent, playSound } from "../utils/sound-manager";
 import { LightningTreeItem } from "../providers/lightning-data-provider";
 import {
   LightningDiff,
   LightningFileDiffButton,
   LightningFileLink,
+  LightningFileRefButton,
 } from "../lightning-types";
 
-const editorDiffButtonsByFilePath = new Map<
-  string,
-  LightningFileDiffButton[]
->();
+type EditorButtonConfig = {
+  sourceFilePath: string;
+  diffButtons?: LightningFileDiffButton[];
+  refButtons?: LightningFileRefButton[];
+};
+
+const editorButtonConfigsByKey = new Map<string, EditorButtonConfig>();
+const execFileAsync = promisify(execFile);
+
+const gitSnapshotScheme = "lightning-git";
+
+class GitSnapshotContentProvider implements vscode.TextDocumentContentProvider {
+  async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
+    const query = new URLSearchParams(uri.query);
+    const workspaceRoot = query.get("workspaceRoot");
+    const gitRef = query.get("gitRef");
+    const filePath = query.get("filePath");
+
+    if (!workspaceRoot || !gitRef || !filePath) {
+      throw new Error("Missing Lightning git snapshot parameters");
+    }
+
+    const { stdout } = await execFileAsync("git", [
+      "show",
+      `${gitRef}:${filePath}`,
+    ], {
+      cwd: workspaceRoot,
+      maxBuffer: 20 * 1024 * 1024,
+    });
+
+    return stdout;
+  }
+}
 
 export function initializeEditorDiffButtons(
   context: vscode.ExtensionContext,
 ): void {
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(
+      gitSnapshotScheme,
+      new GitSnapshotContentProvider(),
+    ),
+  );
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(updateEditorDiffButtonContext),
   );
@@ -44,7 +82,25 @@ export async function openFile(item: LightningFileLink) {
     }
 
     const uri = vscode.Uri.file(resolvedPath);
-    setEditorDiffButtons(resolvedPath, item.diffButtons);
+
+    if (item.gitRef) {
+      const editor = await openGitSnapshotFile(item, resolvedPath);
+      setEditorButtons(
+        getEditorButtonKey(editor.document.uri),
+        resolvedPath,
+        item.diffButtons,
+        item.refButtons,
+      );
+      applyFilePresentationOptions(editor, item);
+      return;
+    }
+
+    setEditorButtons(
+      getEditorButtonKey(uri),
+      resolvedPath,
+      item.diffButtons,
+      item.refButtons,
+    );
 
     // Check if this is an image or binary file
     const extension = path.extname(resolvedPath).toLowerCase();
@@ -77,65 +133,110 @@ export async function openFile(item: LightningFileLink) {
       await vscode.commands.executeCommand("vscode.open", uri);
     } else {
       // For text files, use showTextDocument to support line numbers
-      const document = await vscode.window.showTextDocument(uri);
-
-      // If a line number is specified, scroll to that line
-      if (item.line !== undefined && item.line > 0) {
-        const position = new vscode.Position(item.line - 1, 0); // VS Code uses 0-based line numbers
-        const range = new vscode.Range(position, position);
-        document.selection = new vscode.Selection(position, position);
-        document.revealRange(range, vscode.TextEditorRevealType.InCenter);
-      }
-
-      // Apply highlighting if specified
-      if (item.highlightStartLine !== undefined) {
-        const startLine = Math.max(0, item.highlightStartLine - 1); // Convert to 0-based
-        const endLine = item.highlightEndLine
-          ? Math.max(0, item.highlightEndLine - 1)
-          : startLine;
-
-        const highlightRange = new vscode.Range(
-          new vscode.Position(startLine, 0),
-          new vscode.Position(endLine, Number.MAX_SAFE_INTEGER), // End of line
-        );
-
-        if (item.highlightType === "selection") {
-          // Set selection to highlight the range
-          document.selection = new vscode.Selection(
-            highlightRange.start,
-            highlightRange.end,
-          );
-          document.revealRange(
-            highlightRange,
-            vscode.TextEditorRevealType.InCenter,
-          );
-        } else {
-          // Use text editor decorations for visual highlighting
-          const decorationType = vscode.window.createTextEditorDecorationType({
-            backgroundColor: item.highlightColor || "rgba(255, 255, 0, 0.3)", // Default yellow highlight
-            border: "1px solid rgba(255, 255, 0, 0.8)",
-            isWholeLine: true,
-          });
-
-          // Apply the decoration
-          document.setDecorations(decorationType, [highlightRange]);
-
-          // Remove decoration after specified duration (default 5 seconds)
-          const duration =
-            item.highlightDuration !== undefined
-              ? item.highlightDuration
-              : 5000;
-          if (duration > 0) {
-            setTimeout(() => {
-              decorationType.dispose();
-            }, duration);
-          }
-          // If duration is 0, decoration stays permanent until manually cleared
-        }
-      }
+      const editor = await vscode.window.showTextDocument(uri);
+      applyFilePresentationOptions(editor, item);
     }
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to open file: ${item.path}`);
+  }
+}
+
+async function openGitSnapshotFile(
+  item: LightningFileLink,
+  resolvedPath: string,
+): Promise<vscode.TextEditor> {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    throw new Error("No workspace folder found for git snapshot");
+  }
+
+  const workspaceRoot = workspaceFolder.uri.fsPath;
+  const relativePath = path.relative(workspaceRoot, resolvedPath);
+
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    throw new Error("Git snapshot file must be inside the workspace");
+  }
+
+  const gitPath = relativePath.split(path.sep).join(path.posix.sep);
+  const displayPath = getGitSnapshotDisplayPath(
+    gitPath,
+    item.tabSuffix || `at ${item.gitRef || ""}`,
+  );
+  const query = new URLSearchParams({
+    workspaceRoot,
+    gitRef: item.gitRef || "",
+    filePath: gitPath,
+  });
+  const uri = vscode.Uri.from({
+    scheme: gitSnapshotScheme,
+    authority: "snapshot",
+    path: `/${displayPath}`,
+    query: query.toString(),
+  });
+
+  const document = await vscode.workspace.openTextDocument(uri);
+  return vscode.window.showTextDocument(document, { preview: false });
+}
+
+function getGitSnapshotDisplayPath(gitPath: string, tabSuffix: string): string {
+  const directory = path.posix.dirname(gitPath);
+  const fileName = path.posix.basename(gitPath);
+  const safeTabSuffix = tabSuffix.replace(/[\\/:*?"<>|]/g, "_");
+  const displayFileName = `${fileName} - ${safeTabSuffix}`;
+
+  return directory === "."
+    ? displayFileName
+    : path.posix.join(directory, displayFileName);
+}
+
+function applyFilePresentationOptions(
+  editor: vscode.TextEditor,
+  item: LightningFileLink,
+): void {
+  if (item.line !== undefined && item.line > 0) {
+    const position = new vscode.Position(item.line - 1, 0);
+    const range = new vscode.Range(position, position);
+    editor.selection = new vscode.Selection(position, position);
+    editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+  }
+
+  if (item.highlightStartLine === undefined) {
+    return;
+  }
+
+  const startLine = Math.max(0, item.highlightStartLine - 1);
+  const endLine = item.highlightEndLine
+    ? Math.max(0, item.highlightEndLine - 1)
+    : startLine;
+
+  const highlightRange = new vscode.Range(
+    new vscode.Position(startLine, 0),
+    new vscode.Position(endLine, Number.MAX_SAFE_INTEGER),
+  );
+
+  if (item.highlightType === "selection") {
+    editor.selection = new vscode.Selection(
+      highlightRange.start,
+      highlightRange.end,
+    );
+    editor.revealRange(highlightRange, vscode.TextEditorRevealType.InCenter);
+    return;
+  }
+
+  const decorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: item.highlightColor || "rgba(255, 255, 0, 0.3)",
+    border: "1px solid rgba(255, 255, 0, 0.8)",
+    isWholeLine: true,
+  });
+
+  editor.setDecorations(decorationType, [highlightRange]);
+
+  const duration =
+    item.highlightDuration !== undefined ? item.highlightDuration : 5000;
+  if (duration > 0) {
+    setTimeout(() => {
+      decorationType.dispose();
+    }, duration);
   }
 }
 
@@ -155,6 +256,30 @@ export async function revertActiveEditorDiffButton(): Promise<void> {
   }
 
   await revertDiffItem(toLightningDiff(diffButton));
+}
+
+export async function openActiveEditorRefButton(): Promise<void> {
+  const activeConfig = getActiveEditorButtonConfig();
+  if (!activeConfig) {
+    vscode.window.showInformationMessage("No active editor file found");
+    return;
+  }
+
+  const refButton = await pickActiveEditorRefButton("Open git ref");
+  if (!refButton) {
+    return;
+  }
+
+  await openFile({
+    type: "file",
+    label: refButton.label,
+    path: activeConfig.sourceFilePath,
+    gitRef: refButton.gitRef,
+    tabSuffix: refButton.tabSuffix,
+    icon: refButton.icon,
+    diffButtons: activeConfig.diffButtons,
+    refButtons: activeConfig.refButtons,
+  });
 }
 
 export async function closeFile(treeItem: LightningTreeItem) {
@@ -406,14 +531,23 @@ export async function revertDiffItem(item: LightningDiff) {
   }
 }
 
-function setEditorDiffButtons(
-  resolvedFilePath: string,
+function setEditorButtons(
+  editorKey: string,
+  sourceFilePath: string,
   diffButtons: LightningFileDiffButton[] | undefined,
+  refButtons: LightningFileRefButton[] | undefined,
 ): void {
-  if (diffButtons && diffButtons.length > 0) {
-    editorDiffButtonsByFilePath.set(resolvedFilePath, diffButtons);
+  if (
+    (diffButtons && diffButtons.length > 0) ||
+    (refButtons && refButtons.length > 0)
+  ) {
+    editorButtonConfigsByKey.set(editorKey, {
+      sourceFilePath,
+      diffButtons,
+      refButtons,
+    });
   } else {
-    editorDiffButtonsByFilePath.delete(resolvedFilePath);
+    editorButtonConfigsByKey.delete(editorKey);
   }
 
   updateEditorDiffButtonContext(vscode.window.activeTextEditor);
@@ -422,24 +556,41 @@ function setEditorDiffButtons(
 function updateEditorDiffButtonContext(
   editor: vscode.TextEditor | undefined,
 ): void {
-  const activeFilePath = editor?.document.uri.fsPath;
-  const visible = activeFilePath
-    ? editorDiffButtonsByFilePath.has(activeFilePath)
-    : false;
+  const activeConfig = getEditorButtonConfig(editor);
+  const diffButtonsVisible = Boolean(activeConfig?.diffButtons?.length);
+  const refButtonsVisible = Boolean(activeConfig?.refButtons?.length);
   vscode.commands.executeCommand(
     "setContext",
     "lightning.editorDiffButtonsVisible",
-    visible,
+    diffButtonsVisible,
   );
+  vscode.commands.executeCommand(
+    "setContext",
+    "lightning.editorRefButtonsVisible",
+    refButtonsVisible,
+  );
+}
+
+function getActiveEditorButtonConfig(): EditorButtonConfig | undefined {
+  return getEditorButtonConfig(vscode.window.activeTextEditor);
+}
+
+function getEditorButtonConfig(
+  editor: vscode.TextEditor | undefined,
+): EditorButtonConfig | undefined {
+  return editor
+    ? editorButtonConfigsByKey.get(getEditorButtonKey(editor.document.uri))
+    : undefined;
+}
+
+function getEditorButtonKey(uri: vscode.Uri): string {
+  return uri.scheme === "file" ? uri.fsPath : uri.toString();
 }
 
 async function pickActiveEditorDiffButton(
   placeHolder: string,
 ): Promise<LightningFileDiffButton | undefined> {
-  const activeFilePath = vscode.window.activeTextEditor?.document.uri.fsPath;
-  const diffButtons = activeFilePath
-    ? editorDiffButtonsByFilePath.get(activeFilePath)
-    : undefined;
+  const diffButtons = getActiveEditorButtonConfig()?.diffButtons;
 
   if (!diffButtons || diffButtons.length === 0) {
     vscode.window.showInformationMessage(
@@ -461,6 +612,34 @@ async function pickActiveEditorDiffButton(
   );
 
   return selected?.diffButton;
+}
+
+async function pickActiveEditorRefButton(
+  placeHolder: string,
+): Promise<LightningFileRefButton | undefined> {
+  const refButtons = getActiveEditorButtonConfig()?.refButtons;
+
+  if (!refButtons || refButtons.length === 0) {
+    vscode.window.showInformationMessage(
+      "No Lightning ref buttons configured for the active editor",
+    );
+    return undefined;
+  }
+
+  if (refButtons.length === 1) {
+    return refButtons[0];
+  }
+
+  const selected = await vscode.window.showQuickPick(
+    refButtons.map((refButton) => ({
+      label: `$(${refButton.icon || "git-commit"}) ${refButton.label}`,
+      description: refButton.gitRef,
+      refButton,
+    })),
+    { placeHolder },
+  );
+
+  return selected?.refButton;
 }
 
 function toLightningDiff(diffButton: LightningFileDiffButton): LightningDiff {
