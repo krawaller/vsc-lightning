@@ -57,7 +57,7 @@ Relative file paths are resolved from the workspace root opened in the Extension
 
 Use the optional top-level `fileMenus` array to define Lightning editor-toolbar actions by file path. When a configured file is active, the `Lightning` editor button can apply or revert configured patch diffs, open configured git refs, compare the file between two configured git refs, or return to the worktree file no matter how the file was opened. Existing `diffButtons`, `refButtons`, and `compareButtons` on `file` items are still supported.
 
-Use the Lightning panel title menu to show or hide a generated `Files` section for files listed in `fileMenus`. The generated file list is hidden by default.
+Both normal `type: "file"` items and `fileMenus` entries can include `line` to jump to a specific line when opened. Use the Lightning panel title menu to show or hide a generated `Files` section for files listed in `fileMenus`; that generated file list is hidden by default.
 
 ## Notes
 

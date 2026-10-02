@@ -43,6 +43,7 @@ export type LightningFileCompareButton = {
 
 export type LightningFileMenu = {
   path: string;
+  line?: number;
   diffButtons?: LightningFileDiffButton[];
   refButtons?: LightningFileRefButton[];
   compareButtons?: LightningFileCompareButton[];

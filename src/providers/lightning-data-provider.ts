@@ -435,6 +435,7 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
         type: "file",
         label: fileMenu.path,
         path: fileMenu.path,
+        line: fileMenu.line,
       };
       return new LightningTreeItem(
         fileItem.label,

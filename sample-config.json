@@ -3,6 +3,7 @@
   "fileMenus": [
     {
       "path": "CHANGELOG.md",
+      "line": 10,
       "diffButtons": [
         {
           "label": "Toggle Demo Patch",
@@ -100,6 +101,7 @@
           "type": "file",
           "label": "Open Changelog",
           "path": "CHANGELOG.md",
+          "line": 10,
           "icon": "history",
           "iconColor": "charts.purple",
           "labelColor": "charts.purple"
