@@ -24,20 +24,25 @@ import {
   closeFile,
   applyDiff,
   revertDiff,
+  applyActiveEditorDiffButton,
+  initializeEditorDiffButtons,
+  revertActiveEditorDiffButton,
 } from "../features/file-manager";
 import { showDialog } from "../features/dialog-manager";
 
 export function registerCommands(
   context: vscode.ExtensionContext,
-  treeDataProvider: LightningDataProvider
+  treeDataProvider: LightningDataProvider,
 ): void {
+  initializeEditorDiffButtons(context);
+
   // Register the command to reset config
   const resetConfigCommand = vscode.commands.registerCommand(
     "lightning.resetConfig",
     () => {
       // Reset to initial state
       treeDataProvider.resetToInitialState();
-    }
+    },
   );
 
   // Register the command to open configuration
@@ -58,10 +63,10 @@ export function registerCommands(
         const filePath = fileUri[0].fsPath;
         await treeDataProvider.setConfigurationFile(filePath);
         vscode.window.showInformationMessage(
-          `Loaded configuration: ${path.basename(filePath)}`
+          `Loaded configuration: ${path.basename(filePath)}`,
         );
       }
-    }
+    },
   );
 
   // Register the command to mute sounds
@@ -70,7 +75,7 @@ export function registerCommands(
     () => {
       setSoundMuted(true);
       vscode.window.showInformationMessage("Lightning sounds muted");
-    }
+    },
   );
 
   // Register the command to unmute sounds
@@ -79,7 +84,7 @@ export function registerCommands(
     () => {
       setSoundMuted(false);
       vscode.window.showInformationMessage("Lightning sounds unmuted");
-    }
+    },
   );
 
   // Register the command to show quiz
@@ -101,7 +106,7 @@ export function registerCommands(
           await showQuizWebview(quizItem);
         }
       }
-    }
+    },
   );
 
   // Register the command to open browser
@@ -109,7 +114,7 @@ export function registerCommands(
     "lightning.openBrowser",
     async (browserItem: LightningBrowser) => {
       await openBrowser(browserItem);
-    }
+    },
   );
 
   // Register the command to play sound
@@ -117,7 +122,7 @@ export function registerCommands(
     "lightning.playSound",
     async (item: LightningItem) => {
       await playSoundIfPresent(item);
-    }
+    },
   );
 
   // Register the command to open files
@@ -125,7 +130,7 @@ export function registerCommands(
     "lightning.openFile",
     async (item: LightningFileLink) => {
       await openFile(item);
-    }
+    },
   );
 
   // Register the command to show dialog
@@ -133,7 +138,7 @@ export function registerCommands(
     "lightning.showDialog",
     async (item: LightningDialogMessage) => {
       await showDialog(item);
-    }
+    },
   );
 
   // Register the command to close file tabs
@@ -141,7 +146,7 @@ export function registerCommands(
     "lightning.closeFile",
     async (treeItem: LightningTreeItem) => {
       await closeFile(treeItem);
-    }
+    },
   );
 
   // Register the command to zoom file (close other tabs and focus on target file)
@@ -155,7 +160,7 @@ export function registerCommands(
       if (treeItem.lightningItem?.type === "file") {
         await openFile(treeItem.lightningItem as LightningFileLink);
       }
-    }
+    },
   );
 
   // Register the command to apply diff files
@@ -163,7 +168,7 @@ export function registerCommands(
     "lightning.applyDiff",
     async (item: LightningDiff) => {
       await applyDiff(item);
-    }
+    },
   );
 
   // Register the command to revert diff files
@@ -171,7 +176,21 @@ export function registerCommands(
     "lightning.revertDiff",
     async (treeItem: LightningTreeItem) => {
       await revertDiff(treeItem);
-    }
+    },
+  );
+
+  const applyEditorDiffButtonCommand = vscode.commands.registerCommand(
+    "lightning.applyEditorDiffButton",
+    async () => {
+      await applyActiveEditorDiffButton();
+    },
+  );
+
+  const revertEditorDiffButtonCommand = vscode.commands.registerCommand(
+    "lightning.revertEditorDiffButton",
+    async () => {
+      await revertActiveEditorDiffButton();
+    },
   );
 
   // Add all commands to the context subscriptions
@@ -188,6 +207,8 @@ export function registerCommands(
     closeFileCommand,
     zoomFileCommand,
     applyDiffCommand,
-    revertDiffCommand
+    revertDiffCommand,
+    applyEditorDiffButtonCommand,
+    revertEditorDiffButtonCommand,
   );
 }

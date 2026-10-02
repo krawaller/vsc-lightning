@@ -61,6 +61,27 @@
         },
         {
           "type": "file",
+          "label": "Open Changelog with Diff Buttons",
+          "path": "CHANGELOG.md",
+          "icon": "history",
+          "iconColor": "charts.purple",
+          "labelColor": "charts.purple",
+          "diffButtons": [
+            {
+              "label": "Toggle Demo Patch",
+              "diffPath": "patches/toggle-demo.patch",
+              "icon": "git-pull-request",
+              "revertSoundPath": "revert-success.wav"
+            },
+            {
+              "label": "Auto-Apply Demo Hotfix",
+              "diffPath": "patches/hotfix-demo.patch",
+              "icon": "rocket"
+            }
+          ]
+        },
+        {
+          "type": "file",
           "label": "Test VS Code File Magic - TypeScript",
           "path": "src/extension.ts"
         },

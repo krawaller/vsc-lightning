@@ -65,6 +65,16 @@
         "icon": "$(close)"
       },
       {
+        "command": "lightning.applyEditorDiffButton",
+        "title": "Apply Lightning Diff",
+        "icon": "$(git-pull-request)"
+      },
+      {
+        "command": "lightning.revertEditorDiffButton",
+        "title": "Revert Lightning Diff",
+        "icon": "$(discard)"
+      },
+      {
         "command": "lightning.resetConfig",
         "title": "Reset Config",
         "icon": "$(refresh)"
@@ -139,6 +149,18 @@
           "command": "lightning.openBrowser",
           "when": "view == lightningView && viewItem == browser",
           "group": "inline"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "lightning.applyEditorDiffButton",
+          "when": "lightning.editorDiffButtonsVisible && resourceScheme == file",
+          "group": "navigation@1"
+        },
+        {
+          "command": "lightning.revertEditorDiffButton",
+          "when": "lightning.editorDiffButtonsVisible && resourceScheme == file",
+          "group": "navigation@2"
         }
       ]
     }

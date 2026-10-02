@@ -3,7 +3,25 @@ import * as fs from "fs";
 import * as path from "path";
 import { playSoundIfPresent, playSound } from "../utils/sound-manager";
 import { LightningTreeItem } from "../providers/lightning-data-provider";
-import { LightningFileLink, LightningDiff } from "../lightning-types";
+import {
+  LightningDiff,
+  LightningFileDiffButton,
+  LightningFileLink,
+} from "../lightning-types";
+
+const editorDiffButtonsByFilePath = new Map<
+  string,
+  LightningFileDiffButton[]
+>();
+
+export function initializeEditorDiffButtons(
+  context: vscode.ExtensionContext,
+): void {
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor(updateEditorDiffButtonContext),
+  );
+  updateEditorDiffButtonContext(vscode.window.activeTextEditor);
+}
 
 export async function openFile(item: LightningFileLink) {
   // Play sound if present
@@ -19,13 +37,14 @@ export async function openFile(item: LightningFileLink) {
         resolvedPath = path.resolve(workspaceFolder.uri.fsPath, item.path);
       } else {
         vscode.window.showErrorMessage(
-          "No workspace folder found to resolve relative path"
+          "No workspace folder found to resolve relative path",
         );
         return;
       }
     }
 
     const uri = vscode.Uri.file(resolvedPath);
+    setEditorDiffButtons(resolvedPath, item.diffButtons);
 
     // Check if this is an image or binary file
     const extension = path.extname(resolvedPath).toLowerCase();
@@ -77,18 +96,18 @@ export async function openFile(item: LightningFileLink) {
 
         const highlightRange = new vscode.Range(
           new vscode.Position(startLine, 0),
-          new vscode.Position(endLine, Number.MAX_SAFE_INTEGER) // End of line
+          new vscode.Position(endLine, Number.MAX_SAFE_INTEGER), // End of line
         );
 
         if (item.highlightType === "selection") {
           // Set selection to highlight the range
           document.selection = new vscode.Selection(
             highlightRange.start,
-            highlightRange.end
+            highlightRange.end,
           );
           document.revealRange(
             highlightRange,
-            vscode.TextEditorRevealType.InCenter
+            vscode.TextEditorRevealType.InCenter,
           );
         } else {
           // Use text editor decorations for visual highlighting
@@ -120,6 +139,24 @@ export async function openFile(item: LightningFileLink) {
   }
 }
 
+export async function applyActiveEditorDiffButton(): Promise<void> {
+  const diffButton = await pickActiveEditorDiffButton("Apply diff");
+  if (!diffButton) {
+    return;
+  }
+
+  await applyDiff(toLightningDiff(diffButton));
+}
+
+export async function revertActiveEditorDiffButton(): Promise<void> {
+  const diffButton = await pickActiveEditorDiffButton("Revert diff");
+  if (!diffButton) {
+    return;
+  }
+
+  await revertDiffItem(toLightningDiff(diffButton));
+}
+
 export async function closeFile(treeItem: LightningTreeItem) {
   if (treeItem.lightningItem?.type === "file") {
     const filePath = treeItem.lightningItem.path;
@@ -134,7 +171,7 @@ export async function closeFile(treeItem: LightningTreeItem) {
           resolvedPath = path.resolve(workspaceFolder.uri.fsPath, filePath);
         } else {
           vscode.window.showErrorMessage(
-            "No workspace folder found to resolve relative path"
+            "No workspace folder found to resolve relative path",
           );
           return;
         }
@@ -181,7 +218,7 @@ export async function closeFile(treeItem: LightningTreeItem) {
 
       // If no tab was found, show a message
       vscode.window.showInformationMessage(
-        `File "${path.basename(filePath)}" is not currently open`
+        `File "${path.basename(filePath)}" is not currently open`,
       );
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to close file: ${filePath}`);
@@ -206,7 +243,7 @@ export async function applyDiff(item: LightningDiff) {
         resolvedPath = path.resolve(workspaceFolder.uri.fsPath, diffPath);
       } else {
         vscode.window.showErrorMessage(
-          "No workspace folder found to resolve relative path"
+          "No workspace folder found to resolve relative path",
         );
         return;
       }
@@ -217,7 +254,7 @@ export async function applyDiff(item: LightningDiff) {
       await fs.promises.access(resolvedPath);
     } catch (error) {
       vscode.window.showErrorMessage(
-        `Diff file not found: ${path.basename(diffPath)}`
+        `Diff file not found: ${path.basename(diffPath)}`,
       );
       return;
     }
@@ -226,7 +263,7 @@ export async function applyDiff(item: LightningDiff) {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) {
       vscode.window.showErrorMessage(
-        "No workspace folder found for git operations"
+        "No workspace folder found for git operations",
       );
       return;
     }
@@ -244,6 +281,8 @@ export async function applyDiff(item: LightningDiff) {
       const { exec } = require("child_process");
       const workingDir = workspaceFolder.uri.fsPath;
 
+      await focusFirstDiffTarget(resolvedPath, workingDir);
+
       // First try to apply the diff
       exec(
         `git apply "${resolvedPath}"`,
@@ -257,12 +296,12 @@ export async function applyDiff(item: LightningDiff) {
               (
                 revertError: any,
                 revertStdout: string,
-                revertStderr: string
+                revertStderr: string,
               ) => {
                 if (revertError) {
                   // Both apply and revert failed, show error
                   vscode.window.showErrorMessage(
-                    `Failed to apply diff: ${error.message}\nFailed to revert diff: ${revertError.message}`
+                    `Failed to apply diff: ${error.message}\nFailed to revert diff: ${revertError.message}`,
                   );
                 } else {
                   // Revert succeeded
@@ -270,18 +309,18 @@ export async function applyDiff(item: LightningDiff) {
                     playSound(item.revertSoundPath);
                   }
                   vscode.window.showInformationMessage(
-                    `Reverted diff: ${path.basename(diffPath)}`
+                    `Reverted diff: ${path.basename(diffPath)}`,
                   );
                 }
-              }
+              },
             );
           } else {
             // Apply succeeded
             vscode.window.showInformationMessage(
-              `Applied diff: ${path.basename(diffPath)}`
+              `Applied diff: ${path.basename(diffPath)}`,
             );
           }
-        }
+        },
       );
     } else if (selectedAction === "preview") {
       // Open the diff file for preview
@@ -295,72 +334,180 @@ export async function applyDiff(item: LightningDiff) {
 
 export async function revertDiff(treeItem: LightningTreeItem) {
   if (treeItem.lightningItem?.type === "diff") {
-    const diffPath = treeItem.lightningItem.diffPath;
-
-    try {
-      let resolvedPath = diffPath;
-
-      // If the path is relative, resolve it against the workspace root
-      if (!path.isAbsolute(diffPath)) {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (workspaceFolder) {
-          resolvedPath = path.resolve(workspaceFolder.uri.fsPath, diffPath);
-        } else {
-          vscode.window.showErrorMessage(
-            "No workspace folder found to resolve relative path"
-          );
-          return;
-        }
-      }
-
-      // Check if the diff file exists
-      try {
-        await fs.promises.access(resolvedPath);
-      } catch (error) {
-        vscode.window.showErrorMessage(
-          `Diff file not found: ${path.basename(diffPath)}`
-        );
-        return;
-      }
-
-      // Get the workspace root for git commands
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      if (!workspaceFolder) {
-        vscode.window.showErrorMessage(
-          "No workspace folder found for git operations"
-        );
-        return;
-      }
-
-      // Execute git apply --reverse command immediately
-      const { exec } = require("child_process");
-      const workingDir = workspaceFolder.uri.fsPath;
-
-      exec(
-        `git apply --reverse "${resolvedPath}"`,
-        { cwd: workingDir },
-        (error: any, stdout: string, stderr: string) => {
-          if (error) {
-            vscode.window.showErrorMessage(
-              `Failed to revert diff: ${error.message}\n${stderr}`
-            );
-          } else {
-            // Play revert sound on success
-            if (
-              treeItem.lightningItem &&
-              treeItem.lightningItem.type === "diff" &&
-              treeItem.lightningItem.revertSoundPath
-            ) {
-              playSound(treeItem.lightningItem.revertSoundPath);
-            }
-            vscode.window.showInformationMessage(
-              `Successfully reverted diff: ${path.basename(diffPath)}`
-            );
-          }
-        }
-      );
-    } catch (error) {
-      vscode.window.showErrorMessage(`Failed to revert diff: ${diffPath}`);
-    }
+    await revertDiffItem(treeItem.lightningItem);
   }
+}
+
+export async function revertDiffItem(item: LightningDiff) {
+  const diffPath = item.diffPath;
+
+  try {
+    let resolvedPath = diffPath;
+
+    // If the path is relative, resolve it against the workspace root
+    if (!path.isAbsolute(diffPath)) {
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (workspaceFolder) {
+        resolvedPath = path.resolve(workspaceFolder.uri.fsPath, diffPath);
+      } else {
+        vscode.window.showErrorMessage(
+          "No workspace folder found to resolve relative path",
+        );
+        return;
+      }
+    }
+
+    // Check if the diff file exists
+    try {
+      await fs.promises.access(resolvedPath);
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Diff file not found: ${path.basename(diffPath)}`,
+      );
+      return;
+    }
+
+    // Get the workspace root for git commands
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      vscode.window.showErrorMessage(
+        "No workspace folder found for git operations",
+      );
+      return;
+    }
+
+    // Execute git apply --reverse command immediately
+    const { exec } = require("child_process");
+    const workingDir = workspaceFolder.uri.fsPath;
+
+    await focusFirstDiffTarget(resolvedPath, workingDir);
+
+    exec(
+      `git apply --reverse "${resolvedPath}"`,
+      { cwd: workingDir },
+      (error: any, stdout: string, stderr: string) => {
+        if (error) {
+          vscode.window.showErrorMessage(
+            `Failed to revert diff: ${error.message}\n${stderr}`,
+          );
+        } else {
+          // Play revert sound on success
+          if (item.revertSoundPath) {
+            playSound(item.revertSoundPath);
+          }
+          vscode.window.showInformationMessage(
+            `Successfully reverted diff: ${path.basename(diffPath)}`,
+          );
+        }
+      },
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to revert diff: ${diffPath}`);
+  }
+}
+
+function setEditorDiffButtons(
+  resolvedFilePath: string,
+  diffButtons: LightningFileDiffButton[] | undefined,
+): void {
+  if (diffButtons && diffButtons.length > 0) {
+    editorDiffButtonsByFilePath.set(resolvedFilePath, diffButtons);
+  } else {
+    editorDiffButtonsByFilePath.delete(resolvedFilePath);
+  }
+
+  updateEditorDiffButtonContext(vscode.window.activeTextEditor);
+}
+
+function updateEditorDiffButtonContext(
+  editor: vscode.TextEditor | undefined,
+): void {
+  const activeFilePath = editor?.document.uri.fsPath;
+  const visible = activeFilePath
+    ? editorDiffButtonsByFilePath.has(activeFilePath)
+    : false;
+  vscode.commands.executeCommand(
+    "setContext",
+    "lightning.editorDiffButtonsVisible",
+    visible,
+  );
+}
+
+async function pickActiveEditorDiffButton(
+  placeHolder: string,
+): Promise<LightningFileDiffButton | undefined> {
+  const activeFilePath = vscode.window.activeTextEditor?.document.uri.fsPath;
+  const diffButtons = activeFilePath
+    ? editorDiffButtonsByFilePath.get(activeFilePath)
+    : undefined;
+
+  if (!diffButtons || diffButtons.length === 0) {
+    vscode.window.showInformationMessage(
+      "No Lightning diff buttons configured for the active editor",
+    );
+    return undefined;
+  }
+
+  if (diffButtons.length === 1) {
+    return diffButtons[0];
+  }
+
+  const selected = await vscode.window.showQuickPick(
+    diffButtons.map((diffButton) => ({
+      label: `$(${diffButton.icon || "git-pull-request"}) ${diffButton.label}`,
+      diffButton,
+    })),
+    { placeHolder },
+  );
+
+  return selected?.diffButton;
+}
+
+function toLightningDiff(diffButton: LightningFileDiffButton): LightningDiff {
+  return {
+    type: "diff",
+    label: diffButton.label,
+    diffPath: diffButton.diffPath,
+    action: "apply",
+    icon: diffButton.icon,
+    revertSoundPath: diffButton.revertSoundPath,
+  };
+}
+
+async function focusFirstDiffTarget(
+  diffFilePath: string,
+  workspaceRoot: string,
+): Promise<void> {
+  const targetPath = await getFirstDiffTarget(diffFilePath);
+  if (!targetPath) {
+    return;
+  }
+
+  const resolvedTargetPath = path.resolve(workspaceRoot, targetPath);
+  try {
+    const document =
+      await vscode.workspace.openTextDocument(resolvedTargetPath);
+    await vscode.window.showTextDocument(document, { preview: false });
+  } catch (error) {
+    await vscode.commands.executeCommand(
+      "vscode.open",
+      vscode.Uri.file(resolvedTargetPath),
+    );
+  }
+}
+
+async function getFirstDiffTarget(
+  diffFilePath: string,
+): Promise<string | undefined> {
+  const diffContent = await fs.promises.readFile(diffFilePath, "utf8");
+  const targetLine = diffContent
+    .split(/\r?\n/)
+    .find((line) => line.startsWith("+++ b/"));
+
+  if (!targetLine) {
+    return undefined;
+  }
+
+  const targetPath = targetLine.substring("+++ b/".length).trim();
+  return targetPath === "/dev/null" ? undefined : targetPath;
 }

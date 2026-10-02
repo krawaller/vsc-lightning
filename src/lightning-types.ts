@@ -17,11 +17,19 @@ export type LightningDiff = LightningTreeItemBase & {
   revertSoundPath?: string;
 };
 
+export type LightningFileDiffButton = {
+  label: string;
+  diffPath: string;
+  icon?: string;
+  revertSoundPath?: string;
+};
+
 export type LightningFileLink = LightningTreeItemBase & {
   type: "file";
   path: string;
   line?: number;
   closeSoundPath?: string;
+  diffButtons?: LightningFileDiffButton[];
   // Highlight properties for presentation purposes
   highlightStartLine?: number;
   highlightEndLine?: number;
