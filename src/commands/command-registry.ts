@@ -90,6 +90,20 @@ export function registerCommands(
     },
   );
 
+  const showFileMenusCommand = vscode.commands.registerCommand(
+    "lightning.showFileMenus",
+    () => {
+      treeDataProvider.setFileMenusVisible(true);
+    },
+  );
+
+  const hideFileMenusCommand = vscode.commands.registerCommand(
+    "lightning.hideFileMenus",
+    () => {
+      treeDataProvider.setFileMenusVisible(false);
+    },
+  );
+
   // Register the command to show quiz
   const showQuizCommand = vscode.commands.registerCommand(
     "lightning.showQuiz",
@@ -195,6 +209,8 @@ export function registerCommands(
     openConfigurationCommand,
     toggleMuteCommand,
     toggleUnmuteCommand,
+    showFileMenusCommand,
+    hideFileMenusCommand,
     openFileCommand,
     showDialogCommand,
     showQuizCommand,

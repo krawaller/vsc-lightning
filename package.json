@@ -96,6 +96,16 @@
         "title": "Unmute Sounds"
       },
       {
+        "command": "lightning.showFileMenus",
+        "title": "Show Files",
+        "icon": "$(files)"
+      },
+      {
+        "command": "lightning.hideFileMenus",
+        "title": "Hide Files",
+        "icon": "$(files)"
+      },
+      {
         "command": "lightning.openConfiguration",
         "title": "Open Configuration",
         "icon": "$(file-directory)"
@@ -122,6 +132,16 @@
           "command": "lightning.toggleUnmute",
           "when": "view == lightningView && lightning.soundsMuted",
           "group": "2_sound"
+        },
+        {
+          "command": "lightning.hideFileMenus",
+          "when": "view == lightningView && lightning.configLoaded && lightning.fileMenusAvailable && lightning.fileMenusVisible",
+          "group": "3_files"
+        },
+        {
+          "command": "lightning.showFileMenus",
+          "when": "view == lightningView && lightning.configLoaded && lightning.fileMenusAvailable && !lightning.fileMenusVisible",
+          "group": "3_files"
         }
       ],
       "view/item/context": [

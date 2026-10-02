@@ -5,7 +5,10 @@ import {
   LightningConfiguration,
   LightningItem,
   LightningFolder,
+  LightningFileLink,
 } from "../lightning-types";
+
+type LightningSyntheticTreeItemKind = "fileMenusDivider" | "fileMenusRoot";
 
 // Default configuration for each Lightning item type
 const DEFAULT_ITEM_CONFIG: Record<
@@ -42,16 +45,26 @@ export class LightningTreeItem extends vscode.TreeItem {
     public readonly command?: vscode.Command,
     public readonly lightningItem?: LightningItem,
     private decorationProvider?: LightningDecorationProvider,
+    public readonly syntheticKind?: LightningSyntheticTreeItemKind,
   ) {
     // Set collapsible state based on item type
     const collapsibleState =
-      lightningItem?.type === "folder"
+      syntheticKind === "fileMenusRoot"
         ? vscode.TreeItemCollapsibleState.Collapsed
-        : vscode.TreeItemCollapsibleState.None;
+        : lightningItem?.type === "folder"
+          ? vscode.TreeItemCollapsibleState.Collapsed
+          : vscode.TreeItemCollapsibleState.None;
 
     super(label, collapsibleState);
     this.tooltip = this.label;
     this.command = command;
+
+    if (syntheticKind === "fileMenusRoot") {
+      this.iconPath = new vscode.ThemeIcon("files");
+      this.contextValue = syntheticKind;
+    } else if (syntheticKind === "fileMenusDivider") {
+      this.contextValue = syntheticKind;
+    }
 
     // Set appropriate icons and context values based on item type
     if (lightningItem) {
@@ -184,6 +197,7 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
 
   private configuration: LightningConfiguration | undefined;
   private treeView: vscode.TreeView<LightningTreeItem> | undefined;
+  private fileMenusVisible = false;
 
   constructor(private decorationProvider: LightningDecorationProvider) {}
 
@@ -204,6 +218,7 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       "lightning.configLoaded",
       false,
     );
+    this.updateFileMenusContext();
     this.refresh();
   }
 
@@ -213,6 +228,12 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
 
   getConfiguration(): LightningConfiguration | undefined {
     return this.configuration;
+  }
+
+  setFileMenusVisible(visible: boolean): void {
+    this.fileMenusVisible = visible;
+    this.updateFileMenusContext();
+    this.refresh();
   }
 
   async setConfigurationFile(filePath: string): Promise<void> {
@@ -226,6 +247,7 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
         "lightning.configLoaded",
         true,
       );
+      this.updateFileMenusContext();
 
       // Preregister all colors before refreshing to prevent white flash
       this.preregisterAllColors();
@@ -246,6 +268,19 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
 
     // Recursively preregister colors for all items
     this.preregisterItemColors(this.configuration.items);
+  }
+
+  private updateFileMenusContext(): void {
+    vscode.commands.executeCommand(
+      "setContext",
+      "lightning.fileMenusAvailable",
+      Boolean(this.configuration?.fileMenus?.length),
+    );
+    vscode.commands.executeCommand(
+      "setContext",
+      "lightning.fileMenusVisible",
+      this.fileMenusVisible,
+    );
   }
 
   private preregisterItemColors(
@@ -334,6 +369,10 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
         return Promise.resolve(this.getConfigurationItems());
       }
     } else {
+      if (element.syntheticKind === "fileMenusRoot") {
+        return Promise.resolve(this.getFileMenuItems());
+      }
+
       // Handle folder expansion - show items of the folder
       if (element.lightningItem?.type === "folder") {
         // Pass the folder's folderIconColor/folderLabelColor as inheritance for children
@@ -363,7 +402,51 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       return [];
     }
 
-    return this.getChildItems(this.configuration.items);
+    const items = this.getChildItems(this.configuration.items);
+    if (this.fileMenusVisible && this.configuration.fileMenus?.length) {
+      items.push(
+        new LightningTreeItem(
+          "----------",
+          undefined,
+          undefined,
+          this.decorationProvider,
+          "fileMenusDivider",
+        ),
+        new LightningTreeItem(
+          "Files",
+          undefined,
+          undefined,
+          this.decorationProvider,
+          "fileMenusRoot",
+        ),
+      );
+    }
+
+    return items;
+  }
+
+  private getFileMenuItems(): LightningTreeItem[] {
+    if (!this.configuration?.fileMenus) {
+      return [];
+    }
+
+    return this.configuration.fileMenus.map((fileMenu) => {
+      const fileItem: LightningFileLink = {
+        type: "file",
+        label: fileMenu.path,
+        path: fileMenu.path,
+      };
+      return new LightningTreeItem(
+        fileItem.label,
+        {
+          command: "lightning.openFile",
+          title: "Open File",
+          arguments: [fileItem],
+        },
+        fileItem,
+        this.decorationProvider,
+      );
+    });
   }
 
   private getChildItems(
