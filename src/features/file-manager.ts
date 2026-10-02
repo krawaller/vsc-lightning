@@ -23,7 +23,7 @@ type EditorRefTarget =
   | { type: "worktree" };
 
 type EditorLightningTarget =
-  | { type: "diff"; diffButton: LightningFileDiffButton }
+  | { type: "applyDiff"; diffButton: LightningFileDiffButton }
   | EditorRefTarget;
 
 const editorButtonConfigsByKey = new Map<string, EditorButtonConfig>();
@@ -283,24 +283,6 @@ function applyFilePresentationOptions(
   }
 }
 
-export async function applyActiveEditorDiffButton(): Promise<void> {
-  const diffButton = await pickActiveEditorDiffButton("Apply diff");
-  if (!diffButton) {
-    return;
-  }
-
-  await applyDiff(toLightningDiff(diffButton));
-}
-
-export async function revertActiveEditorDiffButton(): Promise<void> {
-  const diffButton = await pickActiveEditorDiffButton("Revert diff");
-  if (!diffButton) {
-    return;
-  }
-
-  await revertDiffItem(toLightningDiff(diffButton));
-}
-
 export async function openActiveEditorLightningButton(): Promise<void> {
   const activeConfig = getActiveEditorButtonConfig();
   if (!activeConfig) {
@@ -313,27 +295,12 @@ export async function openActiveEditorLightningButton(): Promise<void> {
     return;
   }
 
-  if (target.type === "diff") {
+  if (target.type === "applyDiff") {
     await applyDiff(toLightningDiff(target.diffButton));
     return;
   }
 
   await openEditorRefTarget(target, activeConfig);
-}
-
-export async function openActiveEditorRefButton(): Promise<void> {
-  const activeConfig = getActiveEditorButtonConfig();
-  if (!activeConfig) {
-    vscode.window.showInformationMessage("No active editor file found");
-    return;
-  }
-
-  const refTarget = await pickActiveEditorRefTarget("Open git ref");
-  if (!refTarget) {
-    return;
-  }
-
-  await openEditorRefTarget(refTarget, activeConfig);
 }
 
 async function openEditorRefTarget(
@@ -675,64 +642,6 @@ function getEditorButtonKey(uri: vscode.Uri): string {
   return uri.scheme === "file" ? uri.fsPath : uri.toString();
 }
 
-async function pickActiveEditorDiffButton(
-  placeHolder: string,
-): Promise<LightningFileDiffButton | undefined> {
-  const diffButtons = getActiveEditorButtonConfig()?.diffButtons;
-
-  if (!diffButtons || diffButtons.length === 0) {
-    vscode.window.showInformationMessage(
-      "No Lightning diff buttons configured for the active editor",
-    );
-    return undefined;
-  }
-
-  if (diffButtons.length === 1) {
-    return diffButtons[0];
-  }
-
-  const selected = await vscode.window.showQuickPick(
-    diffButtons.map((diffButton) => ({
-      label: `$(${diffButton.icon || "git-pull-request"}) ${diffButton.label}`,
-      diffButton,
-    })),
-    { placeHolder },
-  );
-
-  return selected?.diffButton;
-}
-
-async function pickActiveEditorRefTarget(
-  placeHolder: string,
-): Promise<EditorRefTarget | undefined> {
-  const refButtons = getActiveEditorButtonConfig()?.refButtons;
-
-  if (!refButtons || refButtons.length === 0) {
-    vscode.window.showInformationMessage(
-      "No Lightning ref buttons configured for the active editor",
-    );
-    return undefined;
-  }
-
-  const selected = await vscode.window.showQuickPick(
-    [
-      ...refButtons.map((refButton) => ({
-        label: `$(${refButton.icon || "git-commit"}) ${refButton.label}`,
-        description: refButton.gitRef,
-        target: { type: "ref", refButton } as EditorRefTarget,
-      })),
-      {
-        label: "$(file) Open worktree file",
-        description: "Current working tree",
-        target: { type: "worktree" } as EditorRefTarget,
-      },
-    ],
-    { placeHolder },
-  );
-
-  return selected?.target;
-}
-
 async function pickActiveEditorLightningTarget(
   activeConfig: EditorButtonConfig,
 ): Promise<EditorLightningTarget | undefined> {
@@ -743,8 +652,8 @@ async function pickActiveEditorLightningTarget(
     [
       ...diffButtons.map((diffButton) => ({
         label: `$(${diffButton.icon || "git-pull-request"}) ${diffButton.label}`,
-        description: "Apply diff",
-        target: { type: "diff", diffButton } as EditorLightningTarget,
+        description: "Apply or revert diff",
+        target: { type: "applyDiff", diffButton } as EditorLightningTarget,
       })),
       ...refButtons.map((refButton) => ({
         label: `$(${refButton.icon || "git-commit"}) ${refButton.label}`,

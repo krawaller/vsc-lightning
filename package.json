@@ -65,11 +65,6 @@
         "icon": "$(close)"
       },
       {
-        "command": "lightning.revertEditorDiffButton",
-        "title": "Revert Lightning Diff",
-        "icon": "$(discard)"
-      },
-      {
         "command": "lightning.openEditorLightningButton",
         "title": "Lightning",
         "icon": "$(zap)"
@@ -156,11 +151,6 @@
           "command": "lightning.openEditorLightningButton",
           "when": "lightning.editorLightningButtonsVisible",
           "group": "navigation@1"
-        },
-        {
-          "command": "lightning.revertEditorDiffButton",
-          "when": "lightning.editorDiffButtonsVisible",
-          "group": "navigation@2"
         }
       ]
     }

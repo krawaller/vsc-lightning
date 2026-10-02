@@ -26,7 +26,6 @@ import {
   revertDiff,
   initializeEditorDiffButtons,
   openActiveEditorLightningButton,
-  revertActiveEditorDiffButton,
 } from "../features/file-manager";
 import { showDialog } from "../features/dialog-manager";
 
@@ -186,13 +185,6 @@ export function registerCommands(
     },
   );
 
-  const revertEditorDiffButtonCommand = vscode.commands.registerCommand(
-    "lightning.revertEditorDiffButton",
-    async () => {
-      await revertActiveEditorDiffButton();
-    },
-  );
-
   // Add all commands to the context subscriptions
   context.subscriptions.push(
     resetConfigCommand,
@@ -209,6 +201,5 @@ export function registerCommands(
     applyDiffCommand,
     revertDiffCommand,
     openEditorLightningButtonCommand,
-    revertEditorDiffButtonCommand,
   );
 }
