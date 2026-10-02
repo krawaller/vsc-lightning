@@ -65,19 +65,14 @@
         "icon": "$(close)"
       },
       {
-        "command": "lightning.applyEditorDiffButton",
-        "title": "Apply Lightning Diff",
-        "icon": "$(git-pull-request)"
-      },
-      {
         "command": "lightning.revertEditorDiffButton",
         "title": "Revert Lightning Diff",
         "icon": "$(discard)"
       },
       {
-        "command": "lightning.openEditorRefButton",
-        "title": "Open Lightning Ref",
-        "icon": "$(git-commit)"
+        "command": "lightning.openEditorLightningButton",
+        "title": "Lightning",
+        "icon": "$(zap)"
       },
       {
         "command": "lightning.resetConfig",
@@ -158,19 +153,14 @@
       ],
       "editor/title": [
         {
-          "command": "lightning.applyEditorDiffButton",
-          "when": "lightning.editorDiffButtonsVisible",
+          "command": "lightning.openEditorLightningButton",
+          "when": "lightning.editorLightningButtonsVisible",
           "group": "navigation@1"
         },
         {
           "command": "lightning.revertEditorDiffButton",
           "when": "lightning.editorDiffButtonsVisible",
           "group": "navigation@2"
-        },
-        {
-          "command": "lightning.openEditorRefButton",
-          "when": "lightning.editorRefButtonsVisible",
-          "group": "navigation@3"
         }
       ]
     }

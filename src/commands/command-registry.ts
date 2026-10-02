@@ -24,9 +24,8 @@ import {
   closeFile,
   applyDiff,
   revertDiff,
-  applyActiveEditorDiffButton,
   initializeEditorDiffButtons,
-  openActiveEditorRefButton,
+  openActiveEditorLightningButton,
   revertActiveEditorDiffButton,
 } from "../features/file-manager";
 import { showDialog } from "../features/dialog-manager";
@@ -180,10 +179,10 @@ export function registerCommands(
     },
   );
 
-  const applyEditorDiffButtonCommand = vscode.commands.registerCommand(
-    "lightning.applyEditorDiffButton",
+  const openEditorLightningButtonCommand = vscode.commands.registerCommand(
+    "lightning.openEditorLightningButton",
     async () => {
-      await applyActiveEditorDiffButton();
+      await openActiveEditorLightningButton();
     },
   );
 
@@ -191,13 +190,6 @@ export function registerCommands(
     "lightning.revertEditorDiffButton",
     async () => {
       await revertActiveEditorDiffButton();
-    },
-  );
-
-  const openEditorRefButtonCommand = vscode.commands.registerCommand(
-    "lightning.openEditorRefButton",
-    async () => {
-      await openActiveEditorRefButton();
     },
   );
 
@@ -216,8 +208,7 @@ export function registerCommands(
     zoomFileCommand,
     applyDiffCommand,
     revertDiffCommand,
-    applyEditorDiffButtonCommand,
+    openEditorLightningButtonCommand,
     revertEditorDiffButtonCommand,
-    openEditorRefButtonCommand,
   );
 }

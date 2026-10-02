@@ -22,6 +22,10 @@ type EditorRefTarget =
   | { type: "ref"; refButton: LightningFileRefButton }
   | { type: "worktree" };
 
+type EditorLightningTarget =
+  | { type: "diff"; diffButton: LightningFileDiffButton }
+  | EditorRefTarget;
+
 const editorButtonConfigsByKey = new Map<string, EditorButtonConfig>();
 const execFileAsync = promisify(execFile);
 
@@ -297,6 +301,26 @@ export async function revertActiveEditorDiffButton(): Promise<void> {
   await revertDiffItem(toLightningDiff(diffButton));
 }
 
+export async function openActiveEditorLightningButton(): Promise<void> {
+  const activeConfig = getActiveEditorButtonConfig();
+  if (!activeConfig) {
+    vscode.window.showInformationMessage("No Lightning actions configured");
+    return;
+  }
+
+  const target = await pickActiveEditorLightningTarget(activeConfig);
+  if (!target) {
+    return;
+  }
+
+  if (target.type === "diff") {
+    await applyDiff(toLightningDiff(target.diffButton));
+    return;
+  }
+
+  await openEditorRefTarget(target, activeConfig);
+}
+
 export async function openActiveEditorRefButton(): Promise<void> {
   const activeConfig = getActiveEditorButtonConfig();
   if (!activeConfig) {
@@ -309,6 +333,13 @@ export async function openActiveEditorRefButton(): Promise<void> {
     return;
   }
 
+  await openEditorRefTarget(refTarget, activeConfig);
+}
+
+async function openEditorRefTarget(
+  refTarget: EditorRefTarget,
+  activeConfig: EditorButtonConfig,
+): Promise<void> {
   await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 
   if (refTarget.type === "worktree") {
@@ -621,6 +652,11 @@ function updateEditorDiffButtonContext(
     "lightning.editorRefButtonsVisible",
     refButtonsVisible,
   );
+  vscode.commands.executeCommand(
+    "setContext",
+    "lightning.editorLightningButtonsVisible",
+    diffButtonsVisible || refButtonsVisible,
+  );
 }
 
 function getActiveEditorButtonConfig(): EditorButtonConfig | undefined {
@@ -692,6 +728,40 @@ async function pickActiveEditorRefTarget(
       },
     ],
     { placeHolder },
+  );
+
+  return selected?.target;
+}
+
+async function pickActiveEditorLightningTarget(
+  activeConfig: EditorButtonConfig,
+): Promise<EditorLightningTarget | undefined> {
+  const diffButtons = activeConfig.diffButtons || [];
+  const refButtons = activeConfig.refButtons || [];
+
+  const selected = await vscode.window.showQuickPick(
+    [
+      ...diffButtons.map((diffButton) => ({
+        label: `$(${diffButton.icon || "git-pull-request"}) ${diffButton.label}`,
+        description: "Apply diff",
+        target: { type: "diff", diffButton } as EditorLightningTarget,
+      })),
+      ...refButtons.map((refButton) => ({
+        label: `$(${refButton.icon || "git-commit"}) ${refButton.label}`,
+        description: refButton.gitRef,
+        target: { type: "ref", refButton } as EditorLightningTarget,
+      })),
+      ...(refButtons.length > 0
+        ? [
+            {
+              label: "$(file) Open worktree file",
+              description: "Current working tree",
+              target: { type: "worktree" } as EditorLightningTarget,
+            },
+          ]
+        : []),
+    ],
+    { placeHolder: "Lightning action" },
   );
 
   return selected?.target;
