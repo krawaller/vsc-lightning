@@ -18,6 +18,10 @@ type EditorButtonConfig = {
   refButtons?: LightningFileRefButton[];
 };
 
+type EditorRefTarget =
+  | { type: "ref"; refButton: LightningFileRefButton }
+  | { type: "worktree" };
+
 const editorButtonConfigsByKey = new Map<string, EditorButtonConfig>();
 const execFileAsync = promisify(execFile);
 
@@ -176,7 +180,41 @@ async function openGitSnapshotFile(
   });
 
   const document = await vscode.workspace.openTextDocument(uri);
+  const languageId = getLanguageIdForPath(gitPath);
+  if (languageId) {
+    await vscode.languages.setTextDocumentLanguage(document, languageId);
+  }
   return vscode.window.showTextDocument(document, { preview: false });
+}
+
+function getLanguageIdForPath(filePath: string): string | undefined {
+  switch (path.posix.extname(filePath).toLowerCase()) {
+    case ".css":
+      return "css";
+    case ".html":
+      return "html";
+    case ".js":
+    case ".cjs":
+    case ".mjs":
+      return "javascript";
+    case ".json":
+      return "json";
+    case ".jsonc":
+      return "jsonc";
+    case ".md":
+      return "markdown";
+    case ".ts":
+      return "typescript";
+    case ".tsx":
+      return "typescriptreact";
+    case ".jsx":
+      return "javascriptreact";
+    case ".yml":
+    case ".yaml":
+      return "yaml";
+    default:
+      return undefined;
+  }
 }
 
 function getGitSnapshotDisplayPath(gitPath: string, tabSuffix: string): string {
@@ -266,18 +304,31 @@ export async function openActiveEditorRefButton(): Promise<void> {
     return;
   }
 
-  const refButton = await pickActiveEditorRefButton("Open git ref");
-  if (!refButton) {
+  const refTarget = await pickActiveEditorRefTarget("Open git ref");
+  if (!refTarget) {
+    return;
+  }
+
+  await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+
+  if (refTarget.type === "worktree") {
+    await openFile({
+      type: "file",
+      label: path.basename(activeConfig.sourceFilePath),
+      path: activeConfig.sourceFilePath,
+      diffButtons: activeConfig.diffButtons,
+      refButtons: activeConfig.refButtons,
+    });
     return;
   }
 
   await openFile({
     type: "file",
-    label: refButton.label,
+    label: refTarget.refButton.label,
     path: activeConfig.sourceFilePath,
-    gitRef: refButton.gitRef,
-    tabSuffix: refButton.tabSuffix,
-    icon: refButton.icon,
+    gitRef: refTarget.refButton.gitRef,
+    tabSuffix: refTarget.refButton.tabSuffix,
+    icon: refTarget.refButton.icon,
     diffButtons: activeConfig.diffButtons,
     refButtons: activeConfig.refButtons,
   });
@@ -615,9 +666,9 @@ async function pickActiveEditorDiffButton(
   return selected?.diffButton;
 }
 
-async function pickActiveEditorRefButton(
+async function pickActiveEditorRefTarget(
   placeHolder: string,
-): Promise<LightningFileRefButton | undefined> {
+): Promise<EditorRefTarget | undefined> {
   const refButtons = getActiveEditorButtonConfig()?.refButtons;
 
   if (!refButtons || refButtons.length === 0) {
@@ -627,20 +678,23 @@ async function pickActiveEditorRefButton(
     return undefined;
   }
 
-  if (refButtons.length === 1) {
-    return refButtons[0];
-  }
-
   const selected = await vscode.window.showQuickPick(
-    refButtons.map((refButton) => ({
-      label: `$(${refButton.icon || "git-commit"}) ${refButton.label}`,
-      description: refButton.gitRef,
-      refButton,
-    })),
+    [
+      ...refButtons.map((refButton) => ({
+        label: `$(${refButton.icon || "git-commit"}) ${refButton.label}`,
+        description: refButton.gitRef,
+        target: { type: "ref", refButton } as EditorRefTarget,
+      })),
+      {
+        label: "$(file) Open worktree file",
+        description: "Current working tree",
+        target: { type: "worktree" } as EditorRefTarget,
+      },
+    ],
     { placeHolder },
   );
 
-  return selected?.refButton;
+  return selected?.target;
 }
 
 function toLightningDiff(diffButton: LightningFileDiffButton): LightningDiff {
