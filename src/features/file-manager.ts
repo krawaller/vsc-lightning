@@ -8,6 +8,7 @@ import { LightningTreeItem } from "../providers/lightning-data-provider";
 import {
   LightningConfiguration,
   LightningDiff,
+  LightningFileCompareButton,
   LightningFileDiffButton,
   LightningFileLink,
   LightningFileMenu,
@@ -19,6 +20,7 @@ type EditorButtonConfig = {
   sourceFilePath: string;
   diffButtons?: LightningFileDiffButton[];
   refButtons?: LightningFileRefButton[];
+  compareButtons?: LightningFileCompareButton[];
 };
 
 type EditorRefTarget =
@@ -27,6 +29,7 @@ type EditorRefTarget =
 
 type EditorLightningTarget =
   | { type: "applyDiff"; diffButton: LightningFileDiffButton }
+  | { type: "compareRefs"; compareButton: LightningFileCompareButton }
   | EditorRefTarget;
 
 const execFileAsync = promisify(execFile);
@@ -162,28 +165,13 @@ async function openGitSnapshotFile(
   }
 
   const workspaceRoot = workspaceFolder.uri.fsPath;
-  const relativePath = path.relative(workspaceRoot, resolvedPath);
-
-  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
-    throw new Error("Git snapshot file must be inside the workspace");
-  }
-
-  const gitPath = relativePath.split(path.sep).join(path.posix.sep);
-  const displayPath = getGitSnapshotDisplayPath(
+  const gitPath = getWorkspaceGitPath(workspaceRoot, resolvedPath);
+  const uri = getGitSnapshotUri(
+    workspaceRoot,
     gitPath,
+    item.gitRef || "",
     item.tabSuffix || `at ${item.gitRef || ""}`,
   );
-  const query = new URLSearchParams({
-    workspaceRoot,
-    gitRef: item.gitRef || "",
-    filePath: gitPath,
-  });
-  const uri = vscode.Uri.from({
-    scheme: gitSnapshotScheme,
-    authority: "snapshot",
-    path: `/${displayPath}`,
-    query: query.toString(),
-  });
 
   const document = await vscode.workspace.openTextDocument(uri);
   const languageId = getLanguageIdForPath(gitPath);
@@ -232,6 +220,37 @@ function getGitSnapshotDisplayPath(gitPath: string, tabSuffix: string): string {
   return directory === "."
     ? displayFileName
     : path.posix.join(directory, displayFileName);
+}
+
+function getGitSnapshotUri(
+  workspaceRoot: string,
+  gitPath: string,
+  gitRef: string,
+  tabSuffix: string,
+): vscode.Uri {
+  const displayPath = getGitSnapshotDisplayPath(gitPath, tabSuffix);
+  const query = new URLSearchParams({
+    workspaceRoot,
+    gitRef,
+    filePath: gitPath,
+  });
+
+  return vscode.Uri.from({
+    scheme: gitSnapshotScheme,
+    authority: "snapshot",
+    path: `/${displayPath}`,
+    query: query.toString(),
+  });
+}
+
+function getWorkspaceGitPath(workspaceRoot: string, filePath: string): string {
+  const relativePath = path.relative(workspaceRoot, filePath);
+
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    throw new Error("Git snapshot file must be inside the workspace");
+  }
+
+  return relativePath.split(path.sep).join(path.posix.sep);
 }
 
 function applyFilePresentationOptions(
@@ -302,7 +321,62 @@ export async function openActiveEditorLightningButton(): Promise<void> {
     return;
   }
 
+  if (target.type === "compareRefs") {
+    await openGitRefComparison(target.compareButton, activeConfig);
+    return;
+  }
+
   await openEditorRefTarget(target, activeConfig);
+}
+
+async function openGitRefComparison(
+  compareButton: LightningFileCompareButton,
+  activeConfig: EditorButtonConfig,
+): Promise<void> {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    vscode.window.showErrorMessage(
+      "No workspace folder found for git operations",
+    );
+    return;
+  }
+
+  const workspaceRoot = workspaceFolder.uri.fsPath;
+  const gitPath = getWorkspaceGitPath(
+    workspaceRoot,
+    activeConfig.sourceFilePath,
+  );
+  const fromUri = getGitSnapshotUri(
+    workspaceRoot,
+    gitPath,
+    compareButton.fromGitRef,
+    compareButton.fromTabSuffix || compareButton.fromGitRef,
+  );
+  const toUri = getGitSnapshotUri(
+    workspaceRoot,
+    gitPath,
+    compareButton.toGitRef,
+    compareButton.toTabSuffix || compareButton.toGitRef,
+  );
+  const languageId = getLanguageIdForPath(gitPath);
+  if (languageId) {
+    await vscode.languages.setTextDocumentLanguage(
+      await vscode.workspace.openTextDocument(fromUri),
+      languageId,
+    );
+    await vscode.languages.setTextDocumentLanguage(
+      await vscode.workspace.openTextDocument(toUri),
+      languageId,
+    );
+  }
+
+  await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+  await vscode.commands.executeCommand(
+    "vscode.diff",
+    fromUri,
+    toUri,
+    compareButton.title || compareButton.label,
+  );
 }
 
 async function openEditorRefTarget(
@@ -324,6 +398,7 @@ async function openEditorRefTarget(
       path: activeConfig.sourceFilePath,
       diffButtons: activeConfig.diffButtons,
       refButtons: activeConfig.refButtons,
+      compareButtons: activeConfig.compareButtons,
     });
     return;
   }
@@ -339,6 +414,7 @@ async function openEditorRefTarget(
     icon: refTarget.refButton.icon,
     diffButtons: activeConfig.diffButtons,
     refButtons: activeConfig.refButtons,
+    compareButtons: activeConfig.compareButtons,
   });
 }
 
@@ -634,10 +710,11 @@ function updateEditorDiffButtonContext(
   const activeConfig = getEditorButtonConfig(editor);
   const diffButtonsVisible = Boolean(activeConfig?.diffButtons?.length);
   const refButtonsVisible = Boolean(activeConfig?.refButtons?.length);
+  const compareButtonsVisible = Boolean(activeConfig?.compareButtons?.length);
   vscode.commands.executeCommand(
     "setContext",
     "lightning.editorLightningButtonsVisible",
-    diffButtonsVisible || refButtonsVisible,
+    diffButtonsVisible || refButtonsVisible || compareButtonsVisible,
   );
 }
 
@@ -688,21 +765,28 @@ function getConfiguredEditorButtonConfig(
   const normalizedSourcePath = path.normalize(sourceFilePath);
   const diffButtons: LightningFileDiffButton[] = [];
   const refButtons: LightningFileRefButton[] = [];
+  const compareButtons: LightningFileCompareButton[] = [];
 
   collectEditorButtonsFromMenus(
     configuration.fileMenus || [],
     normalizedSourcePath,
     diffButtons,
     refButtons,
+    compareButtons,
   );
   collectEditorButtonsForPath(
     configuration.items,
     normalizedSourcePath,
     diffButtons,
     refButtons,
+    compareButtons,
   );
 
-  if (diffButtons.length === 0 && refButtons.length === 0) {
+  if (
+    diffButtons.length === 0 &&
+    refButtons.length === 0 &&
+    compareButtons.length === 0
+  ) {
     return undefined;
   }
 
@@ -710,6 +794,7 @@ function getConfiguredEditorButtonConfig(
     sourceFilePath: normalizedSourcePath,
     diffButtons: diffButtons.length > 0 ? diffButtons : undefined,
     refButtons: refButtons.length > 0 ? refButtons : undefined,
+    compareButtons: compareButtons.length > 0 ? compareButtons : undefined,
   };
 }
 
@@ -718,6 +803,7 @@ function collectEditorButtonsFromMenus(
   sourceFilePath: string,
   diffButtons: LightningFileDiffButton[],
   refButtons: LightningFileRefButton[],
+  compareButtons: LightningFileCompareButton[],
 ): void {
   for (const fileMenu of fileMenus) {
     const menuPath = resolveWorkspacePath(fileMenu.path);
@@ -727,6 +813,7 @@ function collectEditorButtonsFromMenus(
 
     diffButtons.push(...(fileMenu.diffButtons || []));
     refButtons.push(...(fileMenu.refButtons || []));
+    compareButtons.push(...(fileMenu.compareButtons || []));
   }
 }
 
@@ -735,6 +822,7 @@ function collectEditorButtonsForPath(
   sourceFilePath: string,
   diffButtons: LightningFileDiffButton[],
   refButtons: LightningFileRefButton[],
+  compareButtons: LightningFileCompareButton[],
 ): void {
   for (const item of items) {
     if (item.type === "folder") {
@@ -743,6 +831,7 @@ function collectEditorButtonsForPath(
         sourceFilePath,
         diffButtons,
         refButtons,
+        compareButtons,
       );
       continue;
     }
@@ -758,6 +847,7 @@ function collectEditorButtonsForPath(
 
     diffButtons.push(...(item.diffButtons || []));
     refButtons.push(...(item.refButtons || []));
+    compareButtons.push(...(item.compareButtons || []));
   }
 }
 
@@ -777,6 +867,7 @@ async function pickActiveEditorLightningTarget(
 ): Promise<EditorLightningTarget | undefined> {
   const diffButtons = activeConfig.diffButtons || [];
   const refButtons = activeConfig.refButtons || [];
+  const compareButtons = activeConfig.compareButtons || [];
 
   const selected = await vscode.window.showQuickPick(
     [
@@ -789,6 +880,14 @@ async function pickActiveEditorLightningTarget(
         label: `$(${refButton.icon || "git-commit"}) ${refButton.label}`,
         description: refButton.gitRef,
         target: { type: "ref", refButton } as EditorLightningTarget,
+      })),
+      ...compareButtons.map((compareButton) => ({
+        label: `$(${compareButton.icon || "diff"}) ${compareButton.label}`,
+        description: `${compareButton.fromGitRef} -> ${compareButton.toGitRef}`,
+        target: {
+          type: "compareRefs",
+          compareButton,
+        } as EditorLightningTarget,
       })),
       ...(refButtons.length > 0
         ? [

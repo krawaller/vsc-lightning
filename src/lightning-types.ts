@@ -31,10 +31,21 @@ export type LightningFileRefButton = {
   icon?: string;
 };
 
+export type LightningFileCompareButton = {
+  label: string;
+  fromGitRef: string;
+  toGitRef: string;
+  fromTabSuffix?: string;
+  toTabSuffix?: string;
+  title?: string;
+  icon?: string;
+};
+
 export type LightningFileMenu = {
   path: string;
   diffButtons?: LightningFileDiffButton[];
   refButtons?: LightningFileRefButton[];
+  compareButtons?: LightningFileCompareButton[];
 };
 
 export type LightningFileLink = LightningTreeItemBase & {
@@ -46,6 +57,7 @@ export type LightningFileLink = LightningTreeItemBase & {
   closeSoundPath?: string;
   diffButtons?: LightningFileDiffButton[];
   refButtons?: LightningFileRefButton[];
+  compareButtons?: LightningFileCompareButton[];
   // Highlight properties for presentation purposes
   highlightStartLine?: number;
   highlightEndLine?: number;

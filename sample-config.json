@@ -23,6 +23,17 @@
           "tabSuffix": "before diff demo target",
           "icon": "git-commit"
         }
+      ],
+      "compareButtons": [
+        {
+          "label": "Compare Diff Demo Target",
+          "fromGitRef": "0901a02f29ba26d60b55e9047515cb3e1cb1ea71",
+          "toGitRef": "3e627ede931a21dd5cad3eb9eae9970d25ce6efa",
+          "fromTabSuffix": "before diff demo target",
+          "toTabSuffix": "after diff demo target",
+          "title": "CHANGELOG.md: Diff Demo Target",
+          "icon": "diff"
+        }
       ]
     }
   ],

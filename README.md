@@ -55,7 +55,7 @@ Use `sample-config.json` as the reference config. A config has a title and an `i
 
 Relative file paths are resolved from the workspace root opened in the Extension Development Host window.
 
-Use the optional top-level `fileMenus` array to define Lightning editor-toolbar actions by file path. When a configured file is active, the `Lightning` editor button can apply or revert configured diffs, open configured git refs, or return to the worktree file no matter how the file was opened. Existing `diffButtons` and `refButtons` on `file` items are still supported.
+Use the optional top-level `fileMenus` array to define Lightning editor-toolbar actions by file path. When a configured file is active, the `Lightning` editor button can apply or revert configured patch diffs, open configured git refs, compare the file between two configured git refs, or return to the worktree file no matter how the file was opened. Existing `diffButtons`, `refButtons`, and `compareButtons` on `file` items are still supported.
 
 Use the Lightning panel title menu to show or hide a generated `Files` section for files listed in `fileMenus`. The generated file list is hidden by default.
 
