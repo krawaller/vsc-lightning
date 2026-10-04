@@ -24,11 +24,21 @@ export type LightningFileDiffButton = {
   revertSoundPath?: string;
 };
 
+export type LightningPointOfInterest = {
+  title: string;
+  startLine: number;
+  startColumn?: number;
+  endLine?: number;
+  endColumn?: number;
+  icon?: string;
+};
+
 export type LightningFileRefButton = {
   label: string;
   gitRef: string;
   tabSuffix?: string;
   icon?: string;
+  pointsOfInterest?: LightningPointOfInterest[];
 };
 
 export type LightningFileCompareButton = {
@@ -54,6 +64,7 @@ export type LightningFileLink = LightningTreeItemBase & {
   path: string;
   gitRef?: string;
   tabSuffix?: string;
+  openWorktree?: boolean;
   line?: number;
   closeSoundPath?: string;
   diffButtons?: LightningFileDiffButton[];

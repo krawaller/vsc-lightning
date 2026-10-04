@@ -22,7 +22,22 @@
           "label": "Before Diff Demo Target",
           "gitRef": "0901a02f29ba26d60b55e9047515cb3e1cb1ea71",
           "tabSuffix": "before diff demo target",
-          "icon": "git-commit"
+          "icon": "git-commit",
+          "pointsOfInterest": [
+            {
+              "title": "Changelog heading",
+              "startLine": 1,
+              "icon": "symbol-string"
+            },
+            {
+              "title": "Release notes block",
+              "startLine": 3,
+              "startColumn": 1,
+              "endLine": 6,
+              "endColumn": 1,
+              "icon": "selection"
+            }
+          ]
         }
       ],
       "compareButtons": [

@@ -106,6 +106,16 @@
         "icon": "$(files)"
       },
       {
+        "command": "lightning.enableSingleTabMode",
+        "title": "Enable Single Tab",
+        "icon": "$(close-all)"
+      },
+      {
+        "command": "lightning.disableSingleTabMode",
+        "title": "Disable Single Tab",
+        "icon": "$(split-horizontal)"
+      },
+      {
         "command": "lightning.openConfiguration",
         "title": "Open Configuration",
         "icon": "$(file-directory)"
@@ -142,6 +152,16 @@
           "command": "lightning.showFileMenus",
           "when": "view == lightningView && lightning.configLoaded && lightning.fileMenusAvailable && !lightning.fileMenusVisible",
           "group": "3_files"
+        },
+        {
+          "command": "lightning.disableSingleTabMode",
+          "when": "view == lightningView && lightning.singleTabMode",
+          "group": "4_tabs"
+        },
+        {
+          "command": "lightning.enableSingleTabMode",
+          "when": "view == lightningView && !lightning.singleTabMode",
+          "group": "4_tabs"
         }
       ],
       "view/item/context": [

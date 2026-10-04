@@ -11,6 +11,7 @@ import {
   LightningFileLink,
   LightningDialogMessage,
   LightningDiff,
+  LightningPointOfInterest,
 } from "../lightning-types";
 import { setSoundMuted, playSoundIfPresent } from "../utils/sound-manager";
 import {
@@ -26,7 +27,10 @@ import {
   revertDiff,
   initializeEditorDiffButtons,
   openActiveEditorLightningButton,
+  selectPointOfInterest,
+  setSingleTabMode,
 } from "../features/file-manager";
+import { runWithLightningFileOpen } from "../features/tab-state";
 import { showDialog } from "../features/dialog-manager";
 
 export function registerCommands(
@@ -104,6 +108,20 @@ export function registerCommands(
     },
   );
 
+  const enableSingleTabModeCommand = vscode.commands.registerCommand(
+    "lightning.enableSingleTabMode",
+    () => {
+      setSingleTabMode(true);
+    },
+  );
+
+  const disableSingleTabModeCommand = vscode.commands.registerCommand(
+    "lightning.disableSingleTabMode",
+    () => {
+      setSingleTabMode(false);
+    },
+  );
+
   // Register the command to show quiz
   const showQuizCommand = vscode.commands.registerCommand(
     "lightning.showQuiz",
@@ -146,7 +164,7 @@ export function registerCommands(
   const openFileCommand = vscode.commands.registerCommand(
     "lightning.openFile",
     async (item: LightningFileLink) => {
-      await openFile(item);
+      await runWithLightningFileOpen(() => openFile(item));
     },
   );
 
@@ -175,7 +193,9 @@ export function registerCommands(
 
       // Then, open the file if it's a file item
       if (treeItem.lightningItem?.type === "file") {
-        await openFile(treeItem.lightningItem as LightningFileLink);
+        await runWithLightningFileOpen(() =>
+          openFile(treeItem.lightningItem as LightningFileLink),
+        );
       }
     },
   );
@@ -199,7 +219,14 @@ export function registerCommands(
   const openEditorLightningButtonCommand = vscode.commands.registerCommand(
     "lightning.openEditorLightningButton",
     async () => {
-      await openActiveEditorLightningButton();
+      await runWithLightningFileOpen(openActiveEditorLightningButton);
+    },
+  );
+
+  const selectPointOfInterestCommand = vscode.commands.registerCommand(
+    "lightning.selectPointOfInterest",
+    (pointOfInterest: LightningPointOfInterest) => {
+      selectPointOfInterest(pointOfInterest);
     },
   );
 
@@ -211,6 +238,8 @@ export function registerCommands(
     toggleUnmuteCommand,
     showFileMenusCommand,
     hideFileMenusCommand,
+    enableSingleTabModeCommand,
+    disableSingleTabModeCommand,
     openFileCommand,
     showDialogCommand,
     showQuizCommand,
@@ -221,5 +250,6 @@ export function registerCommands(
     applyDiffCommand,
     revertDiffCommand,
     openEditorLightningButtonCommand,
+    selectPointOfInterestCommand,
   );
 }

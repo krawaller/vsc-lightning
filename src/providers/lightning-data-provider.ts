@@ -6,9 +6,26 @@ import {
   LightningItem,
   LightningFolder,
   LightningFileLink,
+  LightningFileMenu,
+  LightningPointOfInterest,
+  LightningFileRefButton,
 } from "../lightning-types";
+import { isLightningFileOpenInProgress } from "../features/tab-state";
 
 type LightningSyntheticTreeItemKind = "fileMenusDivider" | "fileMenusRoot";
+type FileRefSource = {
+  label: string;
+  path: string;
+  line?: number;
+  refButtons?: LightningFileRefButton[];
+};
+type ActiveFileRef = {
+  source: FileRefSource;
+  gitRef: string;
+  selection?: vscode.Selection;
+};
+
+const gitSnapshotScheme = "lightning-git";
 
 // Default configuration for each Lightning item type
 const DEFAULT_ITEM_CONFIG: Record<
@@ -198,8 +215,35 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
   private configuration: LightningConfiguration | undefined;
   private treeView: vscode.TreeView<LightningTreeItem> | undefined;
   private fileMenusVisible = false;
+  private activeFileRef: ActiveFileRef | undefined;
 
-  constructor(private decorationProvider: LightningDecorationProvider) {}
+  constructor(private decorationProvider: LightningDecorationProvider) {
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      if (!editor) {
+        if (
+          this.activeFileRef &&
+          vscode.window.visibleTextEditors.length === 0 &&
+          !isLightningFileOpenInProgress()
+        ) {
+          this.activeFileRef = undefined;
+          this._onDidChangeTreeData.fire();
+        }
+        return;
+      }
+
+      this.activeFileRef = this.getActiveFileRef(editor);
+      this._onDidChangeTreeData.fire();
+    });
+    vscode.window.onDidChangeTextEditorSelection((event) => {
+      const activeFileRef = this.getActiveFileRef(event.textEditor);
+      if (!activeFileRef) {
+        return;
+      }
+
+      this.activeFileRef = activeFileRef;
+      this._onDidChangeTreeData.fire();
+    });
+  }
 
   setTreeView(treeView: vscode.TreeView<LightningTreeItem>): void {
     this.treeView = treeView;
@@ -213,6 +257,7 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
 
   resetToInitialState(): void {
     this.configuration = undefined;
+    this.activeFileRef = undefined;
     vscode.commands.executeCommand(
       "setContext",
       "lightning.configLoaded",
@@ -242,6 +287,9 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       const config: LightningConfiguration = JSON.parse(fileContent);
 
       this.configuration = config;
+      this.activeFileRef = this.getActiveFileRef(
+        vscode.window.activeTextEditor,
+      );
       vscode.commands.executeCommand(
         "setContext",
         "lightning.configLoaded",
@@ -274,7 +322,7 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
     vscode.commands.executeCommand(
       "setContext",
       "lightning.fileMenusAvailable",
-      Boolean(this.configuration?.fileMenus?.length),
+      this.getFileRefSources().length > 0,
     );
     vscode.commands.executeCommand(
       "setContext",
@@ -403,7 +451,7 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
     }
 
     const items = this.getChildItems(this.configuration.items);
-    if (this.fileMenusVisible && this.configuration.fileMenus?.length) {
+    if (this.fileMenusVisible && this.getFileRefSources().length > 0) {
       items.push(
         new LightningTreeItem(
           "----------",
@@ -422,20 +470,34 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       );
     }
 
+    const fileMenuRefItems = this.getFileMenuRefItems();
+    if (fileMenuRefItems.length > 0) {
+      items.push(
+        new LightningTreeItem(
+          "----------",
+          undefined,
+          undefined,
+          this.decorationProvider,
+          "fileMenusDivider",
+        ),
+        ...fileMenuRefItems,
+      );
+    }
+
     return items;
   }
 
   private getFileMenuItems(): LightningTreeItem[] {
-    if (!this.configuration?.fileMenus) {
+    if (!this.configuration) {
       return [];
     }
 
-    return this.configuration.fileMenus.map((fileMenu) => {
+    const items = this.getFileRefSources().map((source) => {
       const fileItem: LightningFileLink = {
         type: "file",
-        label: fileMenu.path,
-        path: fileMenu.path,
-        line: fileMenu.line,
+        label: source.label,
+        path: source.path,
+        line: source.line,
       };
       return new LightningTreeItem(
         fileItem.label,
@@ -448,6 +510,248 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
         this.decorationProvider,
       );
     });
+
+    return items;
+  }
+
+  private getFileMenuRefItems(): LightningTreeItem[] {
+    if (!this.configuration) {
+      return [];
+    }
+
+    const activeFileRef = this.activeFileRef;
+    if (!activeFileRef) {
+      return [];
+    }
+
+    const configuredRefs = this.getConfiguredFileRefs(activeFileRef.source);
+    if (configuredRefs.length === 0) {
+      return [];
+    }
+
+    const refs = configuredRefs.some((refButton) => refButton.gitRef === "HEAD")
+      ? configuredRefs
+      : [
+          ...configuredRefs,
+          {
+            label: "HEAD",
+            gitRef: "HEAD",
+            tabSuffix: "HEAD",
+            icon: "git-commit",
+          },
+        ];
+
+    return [
+      ...refs.map((refButton) =>
+        this.createFileMenuRefItem(
+          activeFileRef.source,
+          refButton,
+          activeFileRef.gitRef === refButton.gitRef,
+        ),
+      ),
+      ...this.getPointOfInterestItems(activeFileRef, configuredRefs),
+    ];
+  }
+
+  private getPointOfInterestItems(
+    activeFileRef: ActiveFileRef,
+    configuredRefs: LightningFileRefButton[],
+  ): LightningTreeItem[] {
+    const activeRefButton = configuredRefs.find(
+      (refButton) => refButton.gitRef === activeFileRef.gitRef,
+    );
+    const pointsOfInterest = activeRefButton?.pointsOfInterest || [];
+    if (pointsOfInterest.length === 0) {
+      return [];
+    }
+
+    return pointsOfInterest.map((pointOfInterest) =>
+      this.createPointOfInterestItem(pointOfInterest, activeFileRef),
+    );
+  }
+
+  private getFileRefSources(): FileRefSource[] {
+    return [
+      ...(this.configuration?.fileMenus || []).map((fileMenu) => ({
+        label: fileMenu.path,
+        path: fileMenu.path,
+        line: fileMenu.line,
+        refButtons: fileMenu.refButtons,
+      })),
+      ...this.getFileRefSourcesFromItems(this.configuration?.items || []),
+    ];
+  }
+
+  private getFileRefSourcesFromItems(items: LightningItem[]): FileRefSource[] {
+    return items.flatMap((item) => {
+      if (item.type === "folder") {
+        return this.getFileRefSourcesFromItems(item.items);
+      }
+
+      if (item.type !== "file") {
+        return [];
+      }
+
+      return [
+        {
+          label: item.label,
+          path: item.path,
+          line: item.line,
+          refButtons: item.refButtons,
+        },
+      ];
+    });
+  }
+
+  private getConfiguredFileRefs(
+    source: FileRefSource,
+  ): LightningFileRefButton[] {
+    return source.refButtons || [];
+  }
+
+  private createFileMenuRefItem(
+    source: FileRefSource,
+    refButton: LightningFileRefButton,
+    isSelected: boolean,
+  ): LightningTreeItem {
+    const fileItem: LightningFileLink = {
+      type: "file",
+      label: refButton.label,
+      path: source.path,
+      gitRef: refButton.gitRef,
+      tabSuffix: refButton.tabSuffix,
+      icon: refButton.icon,
+    };
+    const treeItem = new LightningTreeItem(
+      fileItem.label,
+      {
+        command: "lightning.openFile",
+        title: "Open File",
+        arguments: [fileItem],
+      },
+      undefined,
+      this.decorationProvider,
+    );
+    treeItem.description = source.label;
+    treeItem.iconPath = new vscode.ThemeIcon(
+      isSelected ? "arrow-right" : refButton.icon || "git-commit",
+    );
+    return treeItem;
+  }
+
+  private createPointOfInterestItem(
+    pointOfInterest: LightningPointOfInterest,
+    activeFileRef: ActiveFileRef,
+  ): LightningTreeItem {
+    const isSelected = activeFileRef.selection
+      ? this.isPointOfInterestSelected(pointOfInterest, activeFileRef.selection)
+      : false;
+    const treeItem = new LightningTreeItem(
+      pointOfInterest.title,
+      {
+        command: "lightning.selectPointOfInterest",
+        title: "Select Point of Interest",
+        arguments: [pointOfInterest],
+      },
+      undefined,
+      this.decorationProvider,
+    );
+    treeItem.description = "point";
+    treeItem.iconPath = new vscode.ThemeIcon(
+      isSelected ? "arrow-right" : pointOfInterest.icon || "selection",
+    );
+    return treeItem;
+  }
+
+  private getActiveFileRef(
+    activeEditor: vscode.TextEditor | undefined,
+  ): ActiveFileRef | undefined {
+    if (!activeEditor) {
+      return undefined;
+    }
+
+    const sourceFilePath = this.getSourceFilePath(activeEditor.document.uri);
+    if (!sourceFilePath) {
+      return undefined;
+    }
+
+    const source = this.getFileRefSources().find((candidate) => {
+      const candidatePath = this.resolveWorkspacePath(candidate.path);
+      return candidatePath && path.normalize(candidatePath) === sourceFilePath;
+    });
+
+    if (!source) {
+      return undefined;
+    }
+
+    return {
+      source,
+      gitRef: this.getGitRef(activeEditor.document.uri),
+      selection: activeEditor.selection,
+    };
+  }
+
+  private isPointOfInterestSelected(
+    pointOfInterest: LightningPointOfInterest,
+    selection: vscode.Selection,
+  ): boolean {
+    const range = this.getPointOfInterestRange(pointOfInterest);
+    return selection.isEmpty
+      ? range.contains(selection.active)
+      : range.contains(selection);
+  }
+
+  private getPointOfInterestRange(
+    pointOfInterest: LightningPointOfInterest,
+  ): vscode.Range {
+    const start = new vscode.Position(
+      Math.max(0, pointOfInterest.startLine - 1),
+      Math.max(0, (pointOfInterest.startColumn || 1) - 1),
+    );
+    const end = new vscode.Position(
+      Math.max(0, (pointOfInterest.endLine || pointOfInterest.startLine) - 1),
+      Math.max(
+        0,
+        (pointOfInterest.endColumn || pointOfInterest.startColumn || 1) - 1,
+      ),
+    );
+    return new vscode.Range(start, end);
+  }
+
+  private getSourceFilePath(uri: vscode.Uri): string | undefined {
+    if (uri.scheme === "file") {
+      return path.normalize(uri.fsPath);
+    }
+
+    if (uri.scheme === gitSnapshotScheme) {
+      const query = new URLSearchParams(uri.query);
+      const workspaceRoot = query.get("workspaceRoot");
+      const filePath = query.get("filePath");
+      return workspaceRoot && filePath
+        ? path.normalize(path.resolve(workspaceRoot, filePath))
+        : undefined;
+    }
+
+    return undefined;
+  }
+
+  private getGitRef(uri: vscode.Uri): string {
+    if (uri.scheme !== gitSnapshotScheme) {
+      return "HEAD";
+    }
+
+    return new URLSearchParams(uri.query).get("gitRef") || "HEAD";
+  }
+
+  private resolveWorkspacePath(filePath: string): string | undefined {
+    if (path.isAbsolute(filePath)) {
+      return path.normalize(filePath);
+    }
+
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    return workspaceFolder
+      ? path.normalize(path.resolve(workspaceFolder.uri.fsPath, filePath))
+      : undefined;
   }
 
   private getChildItems(
@@ -548,12 +852,35 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
         }
       }
 
-      return new LightningTreeItem(
+      const treeItem = new LightningTreeItem(
         item.label,
         command,
         itemWithInheritedColors,
         this.decorationProvider,
       );
+      if (this.isActiveFileItem(itemWithInheritedColors)) {
+        treeItem.iconPath = itemWithInheritedColors.iconColor
+          ? new vscode.ThemeIcon(
+              "arrow-right",
+              new vscode.ThemeColor(itemWithInheritedColors.iconColor),
+            )
+          : new vscode.ThemeIcon("arrow-right");
+      }
+      return treeItem;
     });
+  }
+
+  private isActiveFileItem(item: LightningItem): boolean {
+    if (item.type !== "file") {
+      return false;
+    }
+
+    const activePath = this.activeFileRef
+      ? this.resolveWorkspacePath(this.activeFileRef.source.path)
+      : undefined;
+    const itemPath = this.resolveWorkspacePath(item.path);
+    return Boolean(
+      activePath && itemPath && path.normalize(activePath) === itemPath,
+    );
   }
 }
