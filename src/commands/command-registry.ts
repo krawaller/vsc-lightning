@@ -227,6 +227,7 @@ export function registerCommands(
     "lightning.selectPointOfInterest",
     (pointOfInterest: LightningPointOfInterest) => {
       selectPointOfInterest(pointOfInterest);
+      treeDataProvider.refreshActiveFileRef();
     },
   );
 

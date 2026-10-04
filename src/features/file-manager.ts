@@ -432,12 +432,15 @@ function getPointOfInterestRange(
     Math.max(0, pointOfInterest.startLine - 1),
     Math.max(0, (pointOfInterest.startColumn || 1) - 1),
   );
+  const endColumn =
+    pointOfInterest.endColumn ??
+    (pointOfInterest.endLine === undefined &&
+    pointOfInterest.startColumn === undefined
+      ? Number.MAX_SAFE_INTEGER
+      : pointOfInterest.startColumn || 1);
   const end = new vscode.Position(
     Math.max(0, (pointOfInterest.endLine || pointOfInterest.startLine) - 1),
-    Math.max(
-      0,
-      (pointOfInterest.endColumn || pointOfInterest.startColumn || 1) - 1,
-    ),
+    Math.max(0, endColumn - 1),
   );
   return new vscode.Range(start, end);
 }

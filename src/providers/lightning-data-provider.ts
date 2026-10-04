@@ -255,6 +255,11 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
     this._onDidChangeTreeData.fire();
   }
 
+  refreshActiveFileRef(): void {
+    this.activeFileRef = this.getActiveFileRef(vscode.window.activeTextEditor);
+    this._onDidChangeTreeData.fire();
+  }
+
   resetToInitialState(): void {
     this.configuration = undefined;
     this.activeFileRef = undefined;
@@ -519,7 +524,14 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       return [];
     }
 
-    const activeFileRef = this.activeFileRef;
+    const liveActiveFileRef = this.getActiveFileRef(
+      vscode.window.activeTextEditor,
+    );
+    if (liveActiveFileRef) {
+      this.activeFileRef = liveActiveFileRef;
+    }
+
+    const activeFileRef = liveActiveFileRef || this.activeFileRef;
     if (!activeFileRef) {
       return [];
     }
@@ -541,6 +553,11 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
           },
         ];
 
+    const pointOfInterestItems = this.getPointOfInterestItems(
+      activeFileRef,
+      configuredRefs,
+    );
+
     return [
       ...refs.map((refButton) =>
         this.createFileMenuRefItem(
@@ -549,7 +566,18 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
           activeFileRef.gitRef === refButton.gitRef,
         ),
       ),
-      ...this.getPointOfInterestItems(activeFileRef, configuredRefs),
+      ...(pointOfInterestItems.length > 0
+        ? [
+            new LightningTreeItem(
+              "----------",
+              undefined,
+              undefined,
+              this.decorationProvider,
+              "fileMenusDivider",
+            ),
+            ...pointOfInterestItems,
+          ]
+        : []),
     ];
   }
 
@@ -565,8 +593,15 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       return [];
     }
 
-    return pointsOfInterest.map((pointOfInterest) =>
-      this.createPointOfInterestItem(pointOfInterest, activeFileRef),
+    const selectedIndex = activeFileRef.selection
+      ? this.getBestPointOfInterestIndex(
+          pointsOfInterest,
+          activeFileRef.selection,
+        )
+      : -1;
+
+    return pointsOfInterest.map((pointOfInterest, index) =>
+      this.createPointOfInterestItem(pointOfInterest, index === selectedIndex),
     );
   }
 
@@ -641,11 +676,8 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
 
   private createPointOfInterestItem(
     pointOfInterest: LightningPointOfInterest,
-    activeFileRef: ActiveFileRef,
+    isSelected: boolean,
   ): LightningTreeItem {
-    const isSelected = activeFileRef.selection
-      ? this.isPointOfInterestSelected(pointOfInterest, activeFileRef.selection)
-      : false;
     const treeItem = new LightningTreeItem(
       pointOfInterest.title,
       {
@@ -691,14 +723,58 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
     };
   }
 
-  private isPointOfInterestSelected(
-    pointOfInterest: LightningPointOfInterest,
+  private getBestPointOfInterestIndex(
+    pointsOfInterest: LightningPointOfInterest[],
     selection: vscode.Selection,
+  ): number {
+    let bestIndex = -1;
+    let bestSize = Number.POSITIVE_INFINITY;
+
+    pointsOfInterest.forEach((pointOfInterest, index) => {
+      const range = this.getPointOfInterestRange(pointOfInterest);
+      const containsSelection = this.isSelectionWithinRange(selection, range);
+
+      if (!containsSelection) {
+        return;
+      }
+
+      const size = this.getRangeSize(range);
+      if (size < bestSize) {
+        bestIndex = index;
+        bestSize = size;
+      }
+    });
+
+    return bestIndex;
+  }
+
+  private isSelectionWithinRange(
+    selection: vscode.Selection,
+    range: vscode.Range,
   ): boolean {
-    const range = this.getPointOfInterestRange(pointOfInterest);
-    return selection.isEmpty
-      ? range.contains(selection.active)
-      : range.contains(selection);
+    if (selection.isEmpty) {
+      return this.isPositionWithinRange(selection.active, range);
+    }
+
+    return (
+      this.isPositionWithinRange(selection.start, range) &&
+      this.isPositionWithinRange(selection.end, range)
+    );
+  }
+
+  private isPositionWithinRange(
+    position: vscode.Position,
+    range: vscode.Range,
+  ): boolean {
+    return (
+      position.compareTo(range.start) >= 0 && position.compareTo(range.end) <= 0
+    );
+  }
+
+  private getRangeSize(range: vscode.Range): number {
+    const lineSpan = range.end.line - range.start.line;
+    const characterSpan = range.end.character - range.start.character;
+    return lineSpan * 1_000_000 + characterSpan;
   }
 
   private getPointOfInterestRange(
@@ -708,12 +784,15 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       Math.max(0, pointOfInterest.startLine - 1),
       Math.max(0, (pointOfInterest.startColumn || 1) - 1),
     );
+    const endColumn =
+      pointOfInterest.endColumn ??
+      (pointOfInterest.endLine === undefined &&
+      pointOfInterest.startColumn === undefined
+        ? Number.MAX_SAFE_INTEGER
+        : pointOfInterest.startColumn || 1);
     const end = new vscode.Position(
       Math.max(0, (pointOfInterest.endLine || pointOfInterest.startLine) - 1),
-      Math.max(
-        0,
-        (pointOfInterest.endColumn || pointOfInterest.startColumn || 1) - 1,
-      ),
+      Math.max(0, endColumn - 1),
     );
     return new vscode.Range(start, end);
   }
