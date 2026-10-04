@@ -26,6 +26,8 @@ type ActiveFileRef = {
 };
 
 const gitSnapshotScheme = "lightning-git";
+const defaultSelectedColor = "foreground";
+const defaultInactiveColor = "disabledForeground";
 
 // Default configuration for each Lightning item type
 const DEFAULT_ITEM_CONFIG: Record<
@@ -670,6 +672,9 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
     treeItem.description = source.label;
     treeItem.iconPath = new vscode.ThemeIcon(
       isSelected ? "arrow-right" : refButton.icon || "git-commit",
+      new vscode.ThemeColor(
+        isSelected ? defaultSelectedColor : defaultInactiveColor,
+      ),
     );
     return treeItem;
   }
@@ -691,6 +696,9 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
     treeItem.description = "point";
     treeItem.iconPath = new vscode.ThemeIcon(
       isSelected ? "arrow-right" : pointOfInterest.icon || "selection",
+      new vscode.ThemeColor(
+        isSelected ? defaultSelectedColor : defaultInactiveColor,
+      ),
     );
     return treeItem;
   }
@@ -840,6 +848,10 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
   ): LightningTreeItem[] {
     return items.map((item) => {
       let command: vscode.Command | undefined;
+      const isSelected = this.isActiveOrParentOfActiveFile(item);
+      const defaultColor = isSelected
+        ? defaultSelectedColor
+        : defaultInactiveColor;
 
       if (item.type === "title") {
         // Title items get a generic sound command if they have soundPath
@@ -870,7 +882,8 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
           (item.type === "folder"
             ? (item as LightningFolder).folderIconColor
             : undefined) ||
-          parentIconColor,
+          parentIconColor ||
+          (!item.iconColor && !item.labelColor ? defaultColor : undefined),
         labelColor:
           item.labelColor ||
           (item.type === "folder"
@@ -938,15 +951,29 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
         this.decorationProvider,
       );
       if (this.isActiveFileItem(itemWithInheritedColors)) {
-        treeItem.iconPath = itemWithInheritedColors.iconColor
-          ? new vscode.ThemeIcon(
-              "arrow-right",
-              new vscode.ThemeColor(itemWithInheritedColors.iconColor),
-            )
-          : new vscode.ThemeIcon("arrow-right");
+        treeItem.iconPath = new vscode.ThemeIcon(
+          "arrow-right",
+          new vscode.ThemeColor(
+            itemWithInheritedColors.iconColor || defaultSelectedColor,
+          ),
+        );
       }
       return treeItem;
     });
+  }
+
+  private isActiveOrParentOfActiveFile(item: LightningItem): boolean {
+    if (item.type === "file") {
+      return this.isActiveFileItem(item);
+    }
+
+    if (item.type === "folder") {
+      return item.items.some((child) =>
+        this.isActiveOrParentOfActiveFile(child),
+      );
+    }
+
+    return false;
   }
 
   private isActiveFileItem(item: LightningItem): boolean {
