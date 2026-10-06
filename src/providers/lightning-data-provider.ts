@@ -26,7 +26,7 @@ type ActiveFileRef = {
 };
 
 const gitSnapshotScheme = "lightning-git";
-const defaultSelectedColor = "foreground";
+const defaultSelectedColor = "charts.yellow";
 const defaultInactiveColor = "disabledForeground";
 
 // Default configuration for each Lightning item type
@@ -461,7 +461,7 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
     if (this.fileMenusVisible && this.getFileRefSources().length > 0) {
       items.push(
         new LightningTreeItem(
-          "----------",
+          " ",
           undefined,
           undefined,
           this.decorationProvider,
@@ -481,7 +481,7 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
     if (fileMenuRefItems.length > 0) {
       items.push(
         new LightningTreeItem(
-          "----------",
+          " ",
           undefined,
           undefined,
           this.decorationProvider,
@@ -571,7 +571,7 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       ...(pointOfInterestItems.length > 0
         ? [
             new LightningTreeItem(
-              "----------",
+              " ",
               undefined,
               undefined,
               this.decorationProvider,
@@ -676,6 +676,13 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
         isSelected ? defaultSelectedColor : defaultInactiveColor,
       ),
     );
+    if (isSelected) {
+      this.setGeneratedItemLabelColor(
+        treeItem,
+        `ref:${source.path}:${refButton.gitRef}`,
+        defaultSelectedColor,
+      );
+    }
     return treeItem;
   }
 
@@ -693,14 +700,32 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       undefined,
       this.decorationProvider,
     );
-    treeItem.description = "point";
     treeItem.iconPath = new vscode.ThemeIcon(
       isSelected ? "arrow-right" : pointOfInterest.icon || "selection",
       new vscode.ThemeColor(
         isSelected ? defaultSelectedColor : defaultInactiveColor,
       ),
     );
+    if (isSelected) {
+      this.setGeneratedItemLabelColor(
+        treeItem,
+        `poi:${pointOfInterest.title}`,
+        defaultSelectedColor,
+      );
+    }
     return treeItem;
+  }
+
+  private setGeneratedItemLabelColor(
+    treeItem: LightningTreeItem,
+    key: string,
+    color: string,
+  ): void {
+    const uri = vscode.Uri.parse(
+      `lightning://generated/${encodeURIComponent(key)}`,
+    );
+    treeItem.resourceUri = uri;
+    this.decorationProvider.setItemColor(uri, color);
   }
 
   private getActiveFileRef(
@@ -889,7 +914,10 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
           (item.type === "folder"
             ? (item as LightningFolder).folderLabelColor
             : undefined) ||
-          parentLabelColor,
+          parentLabelColor ||
+          (isSelected && !item.iconColor && !item.labelColor
+            ? defaultSelectedColor
+            : undefined),
       };
 
       // Copy preregistered data to the inherited item
