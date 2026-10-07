@@ -554,6 +554,7 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
             icon: "git-commit",
           },
         ];
+    const visibleRefs = refs.filter((refButton) => !refButton.hidden);
 
     const pointOfInterestItems = this.getPointOfInterestItems(
       activeFileRef,
@@ -561,14 +562,14 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
     );
 
     return [
-      ...refs.map((refButton) =>
+      ...visibleRefs.map((refButton) =>
         this.createFileMenuRefItem(
           activeFileRef.source,
           refButton,
           activeFileRef.gitRef === refButton.gitRef,
         ),
       ),
-      ...(pointOfInterestItems.length > 0
+      ...(pointOfInterestItems.length > 0 && visibleRefs.length > 0
         ? [
             new LightningTreeItem(
               " ",
@@ -577,9 +578,9 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
               this.decorationProvider,
               "fileMenusDivider",
             ),
-            ...pointOfInterestItems,
           ]
         : []),
+      ...pointOfInterestItems,
     ];
   }
 
@@ -670,12 +671,6 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       this.decorationProvider,
     );
     treeItem.description = source.label;
-    treeItem.iconPath = new vscode.ThemeIcon(
-      isSelected ? "arrow-right" : refButton.icon || "git-commit",
-      new vscode.ThemeColor(
-        isSelected ? defaultSelectedColor : defaultInactiveColor,
-      ),
-    );
     if (isSelected) {
       this.setGeneratedItemLabelColor(
         treeItem,
@@ -683,6 +678,12 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
         defaultSelectedColor,
       );
     }
+    treeItem.iconPath = new vscode.ThemeIcon(
+      isSelected ? "arrow-right" : refButton.icon || "git-commit",
+      new vscode.ThemeColor(
+        isSelected ? defaultSelectedColor : defaultInactiveColor,
+      ),
+    );
     return treeItem;
   }
 
@@ -700,12 +701,6 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       undefined,
       this.decorationProvider,
     );
-    treeItem.iconPath = new vscode.ThemeIcon(
-      isSelected ? "arrow-right" : pointOfInterest.icon || "selection",
-      new vscode.ThemeColor(
-        isSelected ? defaultSelectedColor : defaultInactiveColor,
-      ),
-    );
     if (isSelected) {
       this.setGeneratedItemLabelColor(
         treeItem,
@@ -713,6 +708,12 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
         defaultSelectedColor,
       );
     }
+    treeItem.iconPath = new vscode.ThemeIcon(
+      isSelected ? "arrow-right" : pointOfInterest.icon || "selection",
+      new vscode.ThemeColor(
+        isSelected ? defaultSelectedColor : defaultInactiveColor,
+      ),
+    );
     return treeItem;
   }
 
@@ -981,6 +982,14 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       if (this.isActiveFileItem(itemWithInheritedColors)) {
         treeItem.iconPath = new vscode.ThemeIcon(
           "arrow-right",
+          new vscode.ThemeColor(
+            itemWithInheritedColors.iconColor || defaultSelectedColor,
+          ),
+        );
+      } else if (isSelected) {
+        treeItem.iconPath = new vscode.ThemeIcon(
+          itemWithInheritedColors.icon ||
+            DEFAULT_ITEM_CONFIG[itemWithInheritedColors.type].defaultIcon,
           new vscode.ThemeColor(
             itemWithInheritedColors.iconColor || defaultSelectedColor,
           ),

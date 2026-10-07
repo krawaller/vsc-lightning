@@ -38,6 +38,7 @@ export type LightningFileRefButton = {
   gitRef: string;
   tabSuffix?: string;
   icon?: string;
+  hidden?: boolean;
   pointsOfInterest?: LightningPointOfInterest[];
 };
 
