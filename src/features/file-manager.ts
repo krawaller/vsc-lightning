@@ -142,6 +142,11 @@ export async function openFile(item: LightningFileLink) {
 
     await closeEditorsBeforeFileOpen(resolvedPath, false);
 
+    if (item.openMode === "browser") {
+      await openFileInBrowser(uri);
+      return;
+    }
+
     // Check if this is an image or binary file
     const extension = path.extname(resolvedPath).toLowerCase();
     const imageExtensions = [
@@ -179,6 +184,10 @@ export async function openFile(item: LightningFileLink) {
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to open file: ${item.path}`);
   }
+}
+
+async function openFileInBrowser(uri: vscode.Uri): Promise<void> {
+  await vscode.commands.executeCommand("simpleBrowser.show", uri.toString());
 }
 
 async function openGitSnapshotFile(

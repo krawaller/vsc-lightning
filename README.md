@@ -53,7 +53,7 @@ Use `sample-config.json` as the reference config. A config has a title and an `i
 - `quiz`
 - `diff`
 
-Relative file paths are resolved from the workspace root opened in the Extension Development Host window.
+Relative file paths are resolved from the workspace root opened in the Extension Development Host window. File items open in the editor by default; set `openMode` to `"browser"` to open a local HTML file in VS Code's Simple Browser instead of showing its source.
 
 Use the optional top-level `fileMenus` array to define Lightning editor-toolbar actions by file path. When a configured file is active, the `Lightning` editor button can apply or revert configured patch diffs, open configured git refs, compare the file between two configured git refs, or return to the worktree file no matter how the file was opened. Existing `diffButtons`, `refButtons`, and `compareButtons` on `file` items are still supported. Opening a normal `type: "file"` item with `refButtons` opens its first configured ref by default; clicking the same file item again cycles through the remaining refs and then `HEAD`.
 

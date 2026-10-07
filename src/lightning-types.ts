@@ -62,6 +62,7 @@ export type LightningFileMenu = {
 export type LightningFileLink = LightningTreeItemBase & {
   type: "file";
   path: string;
+  openMode?: "editor" | "browser";
   gitRef?: string;
   tabSuffix?: string;
   openWorktree?: boolean;
