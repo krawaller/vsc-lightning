@@ -23,6 +23,7 @@ type ActiveFileRef = {
   source: FileRefSource;
   gitRef: string;
   selection?: vscode.Selection;
+  browserTab?: vscode.Tab;
 };
 
 const gitSnapshotScheme = "lightning-git";
@@ -245,6 +246,15 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
       this.activeFileRef = activeFileRef;
       this._onDidChangeTreeData.fire();
     });
+    vscode.window.tabGroups.onDidChangeTabs((event) => {
+      if (
+        this.activeFileRef?.browserTab &&
+        event.closed.includes(this.activeFileRef.browserTab)
+      ) {
+        this.activeFileRef = undefined;
+        this._onDidChangeTreeData.fire();
+      }
+    });
   }
 
   setTreeView(treeView: vscode.TreeView<LightningTreeItem>): void {
@@ -259,6 +269,28 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
 
   refreshActiveFileRef(): void {
     this.activeFileRef = this.getActiveFileRef(vscode.window.activeTextEditor);
+    this._onDidChangeTreeData.fire();
+  }
+
+  setActiveFilePath(filePath: string, browserTab?: vscode.Tab): void {
+    const sourceFilePath = this.resolveWorkspacePath(filePath);
+    if (!sourceFilePath) {
+      this.activeFileRef = undefined;
+      this._onDidChangeTreeData.fire();
+      return;
+    }
+
+    const source = this.getFileRefSources().find((candidate) => {
+      const candidatePath = this.resolveWorkspacePath(candidate.path);
+      return candidatePath && path.normalize(candidatePath) === sourceFilePath;
+    });
+    this.activeFileRef = source
+      ? {
+          source,
+          gitRef: "HEAD",
+          browserTab,
+        }
+      : undefined;
     this._onDidChangeTreeData.fire();
   }
 
@@ -916,7 +948,10 @@ export class LightningDataProvider implements vscode.TreeDataProvider<LightningT
             ? (item as LightningFolder).folderLabelColor
             : undefined) ||
           parentLabelColor ||
-          (isSelected && !item.iconColor && !item.labelColor
+          (isSelected &&
+          item.type !== "folder" &&
+          !item.iconColor &&
+          !item.labelColor
             ? defaultSelectedColor
             : undefined),
       };

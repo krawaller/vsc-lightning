@@ -165,6 +165,12 @@ export function registerCommands(
     "lightning.openFile",
     async (item: LightningFileLink) => {
       await runWithLightningFileOpen(() => openFile(item));
+      if (item.openMode === "browser") {
+        treeDataProvider.setActiveFilePath(
+          item.path,
+          vscode.window.tabGroups.activeTabGroup.activeTab,
+        );
+      }
     },
   );
 
